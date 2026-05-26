@@ -53,7 +53,7 @@ function SocialBtn({ Icon, className = "" }: { Icon: typeof Mail; className?: st
 }
 
 export default function OrbisLanding() {
-  
+
   // 🛠️ Tinh chỉnh hàm cuộn mượt kết hợp đẩy định danh id lên thanh URL ẩn danh
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
@@ -63,7 +63,7 @@ export default function OrbisLanding() {
         behavior: "smooth",
         block: "start",
       });
-      
+
       // Đẩy hashtag lên URL mà không làm trình duyệt bị giật màn hình đột ngột
       window.history.pushState(null, "", `#${id}`);
     }
@@ -72,7 +72,7 @@ export default function OrbisLanding() {
   return (
     <div className="bg-space text-cream font-mono">
       {/* SECTION 1 — HERO (HOMEPAGE) */}
-      <section id="homepage" className="relative w-full min-h-screen overflow-hidden rounded-b-[32px]">
+      <section id="homepage" className="relative w-full min-h-screen overflow-hidden rounded-none">
         <video
           autoPlay
           loop
@@ -83,7 +83,7 @@ export default function OrbisLanding() {
         />
         <div className="relative max-w-[1831px] mx-auto px-5 sm:px-8 lg:px-14 py-6 min-h-screen flex flex-col">
           <header className="flex items-center justify-between">
-            <span className="font-grotesk text-[16px] uppercase tracking-wider">Orbis.Nft</span>
+            <span className="font-grotesk text-[16px] uppercase tracking-wider">AI Study Hub</span>
             <nav className="hidden lg:block liquid-glass rounded-[28px] px-[52px] py-[24px]">
               <ul className="flex gap-10">
                 {NAV_ITEMS.map((item) => (
@@ -264,9 +264,8 @@ export default function OrbisLanding() {
               {[Mail, Twitter, Github].map((Icon, i) => (
                 <button
                   key={i}
-                  className={`flex items-center justify-center text-cream hover:bg-white/10 transition w-[16vw] sm:w-[10rem] lg:w-[12rem] h-[14vw] sm:h-[3.5rem] lg:h-[4.5rem] ${
-                    i < 2 ? "border-b border-white/10" : ""
-                  }`}
+                  className={`flex items-center justify-center text-cream hover:bg-white/10 transition w-[16vw] sm:w-[10rem] lg:w-[12rem] h-[14vw] sm:h-[3.5rem] lg:h-[4.5rem] ${i < 2 ? "border-b border-white/10" : ""
+                    }`}
                 >
                   <Icon size={20} />
                 </button>

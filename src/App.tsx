@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 import OrbisLanding from "./components/LoginPage/OrbisLanding";
 import LoginPanel from "./components/LoginPage/LoginPanel";
-import Dashboard from "./components/Dashboard/Dashboard"; 
+import Dashboard from "./components/Dashboard/Dashboard";
+import Loader from "./components/LoginPage/Loader/Loader";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem("isLoggedIn") === "true";
   });
+
+  // Trạng thái hiển thị hiệu ứng chuyển cảnh
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -17,8 +21,17 @@ export default function App() {
   }, [isLoggedIn]);
 
   const handleLoginSuccess = () => {
-    console.log("✅ Login thành công - Chuyển sang Dashboard");
-    setIsLoggedIn(true);
+    console.log("🔑 Xác thực thành công - Đang kích hoạt cổng kết nối...");
+
+    // Bước 1: Bật màn hình Loader lên trước
+    setIsLoading(true);
+
+    // Bước 2: Chờ chạy hết animation (khoảng 2.5 giây) rồi mới chuyển sang giao diện Dashboard
+    setTimeout(() => {
+      setIsLoggedIn(true);
+      setIsLoading(false); // Tắt hiệu ứng tải đi
+      console.log("✅ Đã vào Dashboard");
+    }, 2500);
   };
 
   const handleLogout = () => {
@@ -26,12 +39,17 @@ export default function App() {
     setIsLoggedIn(false);
   };
 
-  // KIỂM TRA ĐIỀU KIỆN: Nếu đã đăng nhập thành công, hiển thị giao diện Dashboard luôn
+  // ƯU TIÊN 1: Nếu đang trong trạng thái chuyển cảnh, bao phủ toàn bộ màn hình bằng Loader
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  // ƯU TIÊN 2: Nếu đã đăng nhập thành công và hết tải, hiển thị giao diện Dashboard luôn
   if (isLoggedIn) {
     return <Dashboard onLogout={handleLogout} />;
   }
 
-  // Nếu chưa đăng nhập, hiển thị cụm form Login 65/35 ban đầu
+  // ƯU TIÊN 3: Nếu chưa đăng nhập, hiển thị cụm form Login 65/35 ban đầu
   return (
     <div className="flex w-screen h-screen overflow-hidden bg-space">
       {/* BÊN TRÁI - OrbisLanding */}

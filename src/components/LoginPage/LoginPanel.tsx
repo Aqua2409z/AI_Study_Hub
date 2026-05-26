@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Mail, Lock, User, Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import '../LoginPage/LoginPanel.css';
+
 interface LoginPanelProps {
   onLoginSuccess: () => void;
 }
@@ -12,29 +15,108 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [resetMessage, setResetMessage] = useState("");
+  const [notifyCount, setNotifyCount] = useState(0);
+
+  const limitedNotify = (
+    type: "success" | "failure",
+    message: string
+  ) => {
+    // Giới hạn tối đa 3 notify cùng lúc
+    if (notifyCount >= 3) return;
+
+    setNotifyCount((prev) => prev + 1);
+
+    if (type === "success") {
+      Notify.success(message);
+    } else {
+      Notify.failure(message);
+    }
+
+    // Sau timeout thì giảm count
+    setTimeout(() => {
+      setNotifyCount((prev) => Math.max(prev - 1, 0));
+    }, 3000);
+  };
+  // Khởi tạo cấu hình Notiflix bên trong useEffect để tránh lỗi gạch đỏ TypeScript
+  useEffect(() => {
+    // Ép kiểu 'as any' ở cuối Object cấu hình để TypeScript không bắt bẻ các thuộc tính nữa
+    Notify.init({
+      width: '300px',
+      position: 'right-top',
+      distance: '15px',
+      opacity: 1,
+      borderRadius: '20px',
+      timeout: 3000,
+      cssAnimationStyle: 'fade',
+      fontFamily: 'monospace',
+
+      // Giới hạn tối đa 3 thông báo xuất hiện cùng lúc
+      maxVisibleNotifications: 3,
+
+      success: {
+        background: '#10B981',
+        textColor: '#fff',
+        childClassName: 'notiflix-notify-success',
+      },
+      failure: {
+        background: '#EF4444',
+        textColor: '#fff',
+        childClassName: 'notiflix-notify-failure',
+      }
+    } as any); // <--- THÊM "as any" VÀO ĐÂY LÀ HẾT SẠCH ĐỎ
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("ENTER HUB CLICKED");
+    // --- CHECK UI/UX VALIDATE ---
+    if (mode === "login" || mode === "signup") {
+      // 1. Kiểm tra định dạng email có kết thúc bằng @gmail.com không
+      if (!email.endsWith("@gmail.com")) {
+        Notify.failure("Notiflix Failure: Email phải có định dạng @gmail.com");
+        return;
+      }
+
+      // 2. Kiểm tra độ dài mật khẩu dưới 6 ký tự
+      if (password.length < 6) {
+        Notify.failure("Notiflix Failure: Mật khẩu phải từ 6 ký tự trở lên");
+        return;
+      }
+    }
 
     setLoading(true);
 
     setTimeout(() => {
-      console.log("CALL onLoginSuccess");
-
       setLoading(false);
+      Notify.success("Notiflix Success: Đăng nhập thành công!");
 
+      // Chuyển tiếp trang sau khi thông báo hiện lên
+      setTimeout(() => {
+        onLoginSuccess();
+      }, 500);
+    }, 1200);
+  };
+
+  const handleOAuthLogin = (provider: "google" | "github") => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      Notify.success(`Kết nối ${provider} thành công!`);
       onLoginSuccess();
     }, 1200);
   };
+
   const handleForgotPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email.endsWith("@gmail.com")) {
+      Notify.failure("Email không hợp lệ!");
+      return;
+    }
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
       setResetMessage(`Password reset link sent to ${email}.`);
+      Notify.success("Đã gửi link đặt lại mật khẩu!");
       setTimeout(() => {
         setMode("login");
         setResetMessage("");
@@ -43,12 +125,16 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
     }, 1500);
   };
 
-  // Forgot Password Mode
+  // --- 1. GIAO DIỆN QUÊN MẬT KHẨU (FORGOT MODE) ---
   if (mode === "forgot") {
     return (
       <div className="w-full">
         <div className="liquid-glass rounded-[28px] p-8 sm:p-10">
-          <button onClick={() => { setMode("login"); setEmail(""); setResetMessage(""); }} className="flex items-center gap-2 text-cream/60 hover:text-neon mb-6">
+          <button
+            type="button"
+            onClick={() => { setMode("login"); setEmail(""); setResetMessage(""); }}
+            className="flex items-center gap-2 text-cream/60 hover:text-neon mb-6 transition-colors"
+          >
             <ArrowLeft size={18} />
             Back to Login
           </button>
@@ -63,16 +149,27 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
 
           {resetMessage ? (
             <div className="bg-green-500/20 border border-green-400/30 p-4 rounded-2xl mb-6">
-              <p className="text-sm">{resetMessage}</p>
+              <p className="text-sm text-green-300">{resetMessage}</p>
             </div>
           ) : (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="liquid-glass rounded-[16px] flex items-center px-4 py-3 gap-3">
                 <Mail size={18} className="text-cream/60" />
-                <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-transparent outline-none w-full" />
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-transparent outline-none w-full font-mono text-[14px] text-cream placeholder:text-cream/40"
+                />
               </div>
 
-              <button type="submit" disabled={loading || !email} className="w-full py-4 rounded-2xl bg-neon text-space font-grotesk uppercase tracking-wider hover:brightness-110 transition disabled:opacity-50">
+              <button
+                type="submit"
+                disabled={loading || !email}
+                className="w-full py-4 rounded-2xl bg-neon text-space font-grotesk uppercase tracking-wider hover:brightness-110 transition disabled:opacity-50"
+              >
                 {loading ? "Sending..." : "Send Reset Link"}
               </button>
             </form>
@@ -82,7 +179,7 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
     );
   }
 
-  // Login / Signup Mode
+  // --- 2. GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ (LOGIN / SIGNUP MODE) ---
   return (
     <div className="w-full">
       <div className="liquid-glass rounded-[28px] p-8 sm:p-10">
@@ -100,11 +197,17 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
         </p>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          {mode === "signup" && <Field Icon={User} type="text" placeholder="Full name" value={fullName} onChange={setFullName} />}
+          {mode === "signup" && (
+            <Field Icon={User} type="text" placeholder="Full name" value={fullName} onChange={setFullName} />
+          )}
           <Field Icon={Mail} type="email" placeholder="Email address" value={email} onChange={setEmail} />
           <Field Icon={Lock} type="password" placeholder="Password" value={password} onChange={setPassword} />
 
-          <button type="submit" disabled={loading} className="group w-full mt-2 rounded-[18px] bg-neon text-space font-grotesk uppercase text-[15px] tracking-wider py-4 flex items-center justify-center gap-2 hover:brightness-110 transition shadow-[0_0_40px_rgba(111,255,0,0.35)] disabled:opacity-80">
+          <button
+            type="submit"
+            disabled={loading}
+            className="group w-full mt-2 rounded-[18px] bg-neon text-space font-grotesk uppercase text-[15px] tracking-wider py-4 flex items-center justify-center gap-2 hover:brightness-110 transition shadow-[0_0_40px_rgba(111,255,0,0.35)] disabled:opacity-80"
+          >
             {loading ? "Loading..." : mode === "login" ? "Enter the hub" : "Launch account"}
             {!loading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
           </button>
@@ -112,15 +215,60 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
 
         {mode === "login" && (
           <p className="mt-4 text-center">
-            <button onClick={() => setMode("forgot")} className="text-cream/60 hover:text-neon transition text-sm">
+            <button
+              type="button"
+              onClick={() => setMode("forgot")}
+              className="text-cream/60 hover:text-neon transition text-sm"
+            >
               Forgot password?
             </button>
           </p>
         )}
 
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <div className="h-[1px] bg-cream/10 flex-1"></div>
+          <span className="text-[11px] font-mono uppercase text-cream/40 tracking-wider">
+            Or continue with
+          </span>
+          <div className="h-[1px] bg-cream/10 flex-1"></div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handleOAuthLogin("google")}
+            className="liquid-glass flex items-center justify-center gap-2 py-3 rounded-[16px] hover:bg-cream/5 text-cream/80 hover:text-cream transition disabled:opacity-50 text-sm font-mono uppercase"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+            </svg>
+            Google
+          </button>
+
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => handleOAuthLogin("github")}
+            className="liquid-glass flex items-center justify-center gap-2 py-3 rounded-[16px] hover:bg-cream/5 text-cream/80 hover:text-cream transition disabled:opacity-50 text-sm font-mono uppercase"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+            </svg>
+            GitHub
+          </button>
+        </div>
+
         <p className="mt-6 text-center text-[12px] font-mono uppercase text-cream/70">
           {mode === "login" ? "New explorer? " : "Already orbiting? "}
-          <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); setFullName(""); setEmail(""); setPassword(""); }} className="text-neon hover:underline">
+          <button
+            type="button"
+            onClick={() => { setMode(mode === "login" ? "signup" : "login"); setFullName(""); setEmail(""); setPassword(""); }}
+            className="text-neon hover:underline"
+          >
             {mode === "login" ? "Create account" : "Sign in"}
           </button>
         </p>
@@ -141,7 +289,14 @@ function Field({ Icon, type, placeholder, value, onChange }: FieldProps) {
   return (
     <div className="liquid-glass rounded-[16px] flex items-center px-4 py-3 gap-3">
       <Icon size={18} className="text-cream/60" />
-      <input type={type} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} required className="bg-transparent outline-none w-full font-mono text-[14px] placeholder:text-cream/40 text-cream" />
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        className="bg-transparent outline-none w-full font-mono text-[14px] placeholder:text-cream/40 text-cream"
+      />
     </div>
   );
 }
