@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Mail, Lock, User, Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
+import { Mail, Lock, User, Sparkles, ArrowRight, ArrowLeft, Check, X } from "lucide-react";
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import '../LoginPage/LoginPanel.css';
 
@@ -15,31 +15,30 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [resetMessage, setResetMessage] = useState("");
-  const [notifyCount, setNotifyCount] = useState(0);
 
-  const limitedNotify = (
-    type: "success" | "failure",
-    message: string
-  ) => {
-    // Giới hạn tối đa 3 notify cùng lúc
-    if (notifyCount >= 3) return;
+  // --- HÀM KIỂM TRA ĐỘ MẠNH MẬT KHẨU ---
+  const getPasswordStrength = (pwd: string) => {
+    if (!pwd) return { score: 0, label: "", color: "bg-transparent", textClass: "" };
+    
+    let score = 0;
+    // 1. Độ dài tối thiểu
+    if (pwd.length >= 6) score++;
+    // 2. Có chứa cả chữ hoa và chữ thường
+    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
+    // 3. Có chứa số
+    if (/\d/.test(pwd)) score++;
+    // 4. Có ký tự đặc biệt
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
 
-    setNotifyCount((prev) => prev + 1);
-
-    if (type === "success") {
-      Notify.success(message);
-    } else {
-      Notify.failure(message);
-    }
-
-    // Sau timeout thì giảm count
-    setTimeout(() => {
-      setNotifyCount((prev) => Math.max(prev - 1, 0));
-    }, 3000);
+    if (score <= 1) return { score, label: "Quá yếu ❌", color: "bg-red-500", textClass: "text-red-400" };
+    if (score === 2) return { score, label: "Trung bình ⚠️", color: "bg-yellow-500", textClass: "text-yellow-400" };
+    if (score === 3) return { score, label: "Mạnh  ✨", color: "bg-blue-500", textClass: "text-blue-400" };
+    return { score, label: "Cực kỳ an toàn 💪", color: "bg-emerald-500", textClass: "text-emerald-400" };
   };
-  // Khởi tạo cấu hình Notiflix bên trong useEffect để tránh lỗi gạch đỏ TypeScript
+
+  const strength = getPasswordStrength(password);
+
   useEffect(() => {
-    // Ép kiểu 'as any' ở cuối Object cấu hình để TypeScript không bắt bẻ các thuộc tính nữa
     Notify.init({
       width: '300px',
       position: 'right-top',
@@ -49,48 +48,36 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
       timeout: 3000,
       cssAnimationStyle: 'fade',
       fontFamily: 'monospace',
-
-      // Giới hạn tối đa 3 thông báo xuất hiện cùng lúc
       maxVisibleNotifications: 3,
-
-      success: {
-        background: '#10B981',
-        textColor: '#fff',
-        childClassName: 'notiflix-notify-success',
-      },
-      failure: {
-        background: '#EF4444',
-        textColor: '#fff',
-        childClassName: 'notiflix-notify-failure',
-      }
-    } as any); // <--- THÊM "as any" VÀO ĐÂY LÀ HẾT SẠCH ĐỎ
+      success: { background: '#10B981', textColor: '#fff' },
+      failure: { background: '#EF4444', textColor: '#fff' }
+    } as any);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // --- CHECK UI/UX VALIDATE ---
-    if (mode === "login" || mode === "signup") {
-      // 1. Kiểm tra định dạng email có kết thúc bằng @gmail.com không
-      if (!email.endsWith("@gmail.com")) {
-        Notify.failure("Notiflix Failure: Email phải có định dạng @gmail.com");
-        return;
-      }
+    if (!email.endsWith("@gmail.com")) {
+      Notify.failure("Email phải có định dạng @gmail.com");
+      return;
+    }
 
-      // 2. Kiểm tra độ dài mật khẩu dưới 6 ký tự
-      if (password.length < 6) {
-        Notify.failure("Notiflix Failure: Mật khẩu phải từ 6 ký tự trở lên");
-        return;
-      }
+    // Chặn không cho Đăng ký nếu mật khẩu quá yếu (Score dưới 2)
+    if (mode === "signup" && strength.score < 2) {
+      Notify.failure("Mật khẩu của bạn quá yếu! Vui lòng làm theo gợi ý.");
+      return;
+    }
+
+    if (mode === "login" && password.length < 6) {
+      Notify.failure("Mật khẩu phải từ 6 ký tự trở lên");
+      return;
     }
 
     setLoading(true);
 
     setTimeout(() => {
       setLoading(false);
-      Notify.success("Notiflix Success: Đăng nhập thành công!");
-
-      // Chuyển tiếp trang sau khi thông báo hiện lên
+      Notify.success(mode === "login" ? "Đăng nhập thành công!" : "Đăng ký tài khoản thành công!");
       setTimeout(() => {
         onLoginSuccess();
       }, 500);
@@ -125,7 +112,6 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
     }, 1500);
   };
 
-  // --- 1. GIAO DIỆN QUÊN MẬT KHẨU (FORGOT MODE) ---
   if (mode === "forgot") {
     return (
       <div className="w-full">
@@ -179,7 +165,6 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
     );
   }
 
-  // --- 2. GIAO DIỆN ĐĂNG NHẬP / ĐĂNG KÝ (LOGIN / SIGNUP MODE) ---
   return (
     <div className="w-full">
       <div className="liquid-glass rounded-[28px] p-8 sm:p-10">
@@ -202,6 +187,40 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
           )}
           <Field Icon={Mail} type="email" placeholder="Email address" value={email} onChange={setEmail} />
           <Field Icon={Lock} type="password" placeholder="Password" value={password} onChange={setPassword} />
+
+          {/* --- ĐOẠN ĐƯỢC THÊM: UI THANH ĐO ĐỘ MẠNH YẾU MẬT KHẨU KHI SIGNUP --- */}
+          {mode === "signup" && password && (
+            <div className="space-y-2 px-1 animate-fadeIn">
+              <div className="flex justify-between items-center text-xs font-mono">
+                <span className="text-cream/60">Độ bảo mật:</span>
+                <span className={`font-bold ${strength.textClass}`}>{strength.label}</span>
+              </div>
+              
+              {/* Thanh progress bar chia làm 4 nấc */}
+              <div className="grid grid-cols-4 gap-1.5 h-1.5 w-full bg-cream/10 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-300 ${strength.score >= 1 ? strength.color : 'bg-transparent'}`}></div>
+                <div className={`h-full rounded-full transition-all duration-300 ${strength.score >= 2 ? strength.color : 'bg-transparent'}`}></div>
+                <div className={`h-full rounded-full transition-all duration-300 ${strength.score >= 3 ? strength.color : 'bg-transparent'}`}></div>
+                <div className={`h-full rounded-full transition-all duration-300 ${strength.score >= 4 ? strength.color : 'bg-transparent'}`}></div>
+              </div>
+
+              {/* Gợi ý điều kiện cho User dễ nhìn */}
+              <div className="pt-1 text-[11px] font-mono text-cream/40 space-y-0.5">
+                <div className="flex items-center gap-1">
+                  {password.length >= 6 ? <Check size={12} className="text-emerald-400" /> : <X size={12} className="text-red-400" />}
+                  <span>Tối thiểu 6 ký tự</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {(/[a-z]/.test(password) && /[A-Z]/.test(password)) ? <Check size={12} className="text-emerald-400" /> : <X size={12} className="text-red-400" />}
+                  <span>Chứa chữ HOA và chữ thường</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {/\d/.test(password) ? <Check size={12} className="text-emerald-400" /> : <X size={12} className="text-red-400" />}
+                  <span>Chứa ít nhất 1 chữ số</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"
