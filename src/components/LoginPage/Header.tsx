@@ -1,5 +1,5 @@
 import { Mail, Twitter, Github } from "lucide-react";
-import SocialBtn from "../LoginPage/SocialBtn";
+import SocialBtn from "./SocialBtn";
 import { NAV } from "../constants";
 
 export default function Header() {

@@ -1,5 +1,5 @@
 import { Mail, Twitter, Github } from "lucide-react";
-import Header from "../LoginPage/Header";
+import Header from "./Header";
 import SocialBtn from "./SocialBtn";
 import { HERO_VIDEO } from "../constants";
 

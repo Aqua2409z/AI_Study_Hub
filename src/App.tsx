@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import OrbisLanding from "./components/LoginPage/OrbisLanding";
 import LoginPanel from "./components/LoginPage/LoginPanel";
-import Dashboard from "./components/Dashboard/Dashboard";
 import Loader from "./components/LoginPage/Loader/Loader";
+import Dashboard from "./components/Dashboard/Dashboard";
+
+// --- 1. MÀN HÌNH DASHBOARD (Có thể tách ra file riêng Dashboard.tsx nếu cần) ---
+
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {

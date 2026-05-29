@@ -14,7 +14,7 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // <-- Thêm state nhập lại mật khẩu
+  const [confirmPassword, setConfirmPassword] = useState(""); 
   const [resetMessage, setResetMessage] = useState("");
 
   // --- HÀM KIỂM TRA ĐỘ MẠNH MẬT KHẨU ---
@@ -60,12 +60,10 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
     }
 
     if (mode === "signup") {
-      // Chặn nếu mật khẩu quá yếu (Score dưới 2)
       if (strength.score < 2) {
         Notify.failure("Mật khẩu của bạn quá yếu! Vui lòng làm theo gợi ý.");
         return;
       }
-      // Kiểm tra mật khẩu nhập lại trùng khớp
       if (password !== confirmPassword) {
         Notify.failure("Mật khẩu nhập lại không trùng khớp!");
         return;
@@ -81,10 +79,23 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
 
     setTimeout(() => {
       setLoading(false);
-      Notify.success(mode === "login" ? "Đăng nhập thành công!" : "Đăng ký tài khoản thành công!");
-      setTimeout(() => {
-        onLoginSuccess();
-      }, 500);
+      
+      if (mode === "login") {
+        Notify.success("Đăng nhập thành công!");
+        setTimeout(() => {
+          onLoginSuccess();
+        }, 500);
+      } else {
+        // XỬ LÝ KHI ĐĂNG KÝ THÀNH CÔNG: Trả về màn hình đăng nhập
+        Notify.success("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
+        setTimeout(() => {
+          setMode("login");
+          // Giữ lại email vừa đăng ký để user đỡ phải nhập lại, chỉ xóa mật khẩu
+          setPassword("");
+          setConfirmPassword("");
+          setFullName("");
+        }, 500);
+      }
     }, 1200);
   };
 
@@ -193,10 +204,8 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
 
           <Field Icon={Lock} type="password" placeholder="Password" value={password} onChange={setPassword} />
 
-          {/* --- UI THANH ĐO ĐỘ MẠNH YẾU MẬT KHẨU KHI SIGNUP --- */}
-          {/* --- UI THANH ĐO ĐỘ MẠNH YẾU MẬT KHẨU KHI SIGNUP --- */}
           {mode === "signup" && password && (
-            <div className="space-y-1.5 px-1 animate-fadeIn"> {/* Giảm từ space-y-2 */}
+            <div className="space-y-1.5 px-1 animate-fadeIn">
               <div className="flex justify-between items-center text-xs font-mono">
                 <span className="text-cream/60">Độ bảo mật:</span>
                 <span className={`font-bold ${strength.textClass}`}>{strength.label}</span>
@@ -209,7 +218,6 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
                 <div className={`h-full rounded-full transition-all duration-300 ${strength.score >= 4 ? strength.color : 'bg-transparent'}`}></div>
               </div>
 
-              {/* Giảm khoảng cách giữa các dòng check xuống cực nhỏ (space-y-0) */}
               <div className="pt-0.5 text-[11px] font-mono text-cream/40 space-y-0.5">
                 <div className="flex items-center gap-1">
                   {password.length >= 6 ? <Check size={12} className="text-emerald-400" /> : <X size={12} className="text-red-400" />}
@@ -227,7 +235,6 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
             </div>
           )}
 
-          {/* --- Ô NHẬP LẠI MẬT KHẨU KHI SIGNUP --- */}
           {mode === "signup" && (
             <div className="animate-fadeIn">
               <Field
@@ -337,7 +344,6 @@ interface FieldProps {
   onChange: (val: string) => void;
 }
 
-// --- THAY ĐỔI COMPONENT FIELD HỖ TRỢ NÚT ẨN/HIỆN MẮT ---
 function Field({ Icon, type, placeholder, value, onChange }: FieldProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
