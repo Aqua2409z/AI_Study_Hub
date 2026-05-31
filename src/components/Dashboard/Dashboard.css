@@ -688,3 +688,154 @@ select.clean-select {
   overflow: hidden; 
   text-indent: -10000px; 
 }
+/* --- STYLE BỔ SUNG CHO DROPDOWN NOTIFICATION & AVATAR --- */
+.dh-noti-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background-color: #ef4444; /* Màu đỏ */
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  line-height: 1;
+}
+
+.dh-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  animation: fadeInDropdown 0.2s ease-out;
+}
+
+@keyframes fadeInDropdown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Kích thước riêng cho Box thông báo */
+.dh-noti-dropdown {
+  width: 320px;
+}
+
+.dh-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dh-dropdown-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.dh-dropdown-header button {
+  background: none;
+  border: none;
+  color: #0ea5e9;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.dh-dropdown-header button:hover {
+  text-decoration: underline;
+}
+
+.dh-dropdown-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.dh-noti-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f8fafc;
+  transition: background 0.2s;
+}
+
+.dh-noti-item:hover {
+  background-color: #f8fafc;
+}
+
+.dh-noti-item.unread {
+  background-color: #f0f9ff; /* Nền xanh nhạt cho tin chưa đọc */
+}
+
+.dh-noti-text {
+  font-size: 13px;
+  color: #334155;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+}
+
+.dh-noti-time {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.dh-dropdown-empty {
+  padding: 24px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Kích thước riêng cho Box Avatar Dropdown */
+.dh-avatar-dropdown {
+  width: 180px;
+  padding: 8px 0;
+}
+
+.dh-user-info {
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dh-user-info strong {
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.dh-user-info span {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.dh-avatar-dropdown hr {
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  margin: 6px 0;
+}
+
+.dh-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  color: #ef4444; /* Màu chữ đỏ */
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dh-logout-btn:hover {
+  background-color: #fef2f2; /* Nền đỏ nhạt khi hover */
+}

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Upload, Folder, Search, Plus, MoreVertical, FileText } from "lucide-react";
-import HeroBackground from "./HeroBackground"; 
+import HeroBackground from "./BackGroundForDocuments/HeroBackground"; 
 
 interface DocumentItem {
     id: string;

@@ -1,6 +1,8 @@
 import "./Dashboard.css";
 import AIAssistant from "./AIAssistant";
 import Documents from "./Documents";
+// 🎯 Import component AIChat
+import { AIChat } from "./AIChat/Aichat";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { BarChart, Bar, ResponsiveContainer, XAxis, Cell } from "recharts";
@@ -71,38 +73,119 @@ function Sidebar({ active, setActive, onLogout }: { active: number; setActive: (
               className={`dh-nav-btn ${active === i ? "active" : ""}`}
               aria-label={it.label}
             >
+              
               <Icon size={20} />
             </motion.button>
+            
           );
         })}
       </nav>
-      <div className="dh-nav-foot">
-        <motion.button whileHover={{ scale: 1.1 }} className="dh-nav-btn" aria-label="Settings">
-          <Settings size={20} />
-        </motion.button>
-        <motion.button onClick={onLogout} whileHover={{ scale: 1.1 }} className="dh-nav-btn" aria-label="Logout">
-          <LogOut size={20} />
-        </motion.button>
-      </div>
+
+      <motion.button whileHover={{ scale: 1.1 }} className="dh-nav-btn" aria-label="Settings">
+        <Settings size={20} />
+      </motion.button>
+
+
     </motion.div>
   );
 }
 
-/* ---------- HEADER ---------- */
-function Header() {
+/* ---------- HEADER WITH DROPDOWNS ---------- */
+function Header({ onLogout }: { onLogout: () => void }) {
+  const [showNoti, setShowNoti] = useState(false);
+  const [showAvatarMenu, setShowAvatarMenu] = useState(false);
+
+  // Giả lập danh sách thông báo
+  const [notifications, setNotifications] = useState([
+    { id: 1, text: "🤖 AI vừa tóm tắt xong tài liệu 'Calculus II'", time: "5 phút trước", unread: true },
+    { id: 2, text: "🔥 Bạn vừa duy trì được Chuỗi học tập 5 ngày!", time: "2 giờ trước", unread: true },
+    { id: 3, text: "🏆 Jack Nicklson vừa vượt qua bạn trên Leaderboard", time: "1 ngày trước", unread: false },
+  ]);
+
+  const unreadCount = notifications.filter(n => n.unread).length;
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+  };
+
   return (
-    <motion.header className="dh-header" variants={headerVariants as any}>
+    <motion.header className="dh-header" variants={headerVariants as any} style={{ position: "relative" }}>
       <h1 className="dh-title">
         Dashboard
         <small>Welcome back, Mia — let's keep learning ✨</small>
       </h1>
+
       <div className="dh-header-right">
         <div className="dh-pill">
           <span className="dh-pill-item" style={{ color: "#0ea5e9" }}><Gem size={16} /> 144</span>
           <span className="dh-pill-item" style={{ color: "#f59e0b" }}><Coins size={16} /> 2,321</span>
         </div>
-        <button className="dh-bell" aria-label="Notifications"><Bell size={18} /></button>
-        <div className="dh-avatar">M</div>
+
+        {/* --- NÚT NOTIFICATION --- */}
+        <div style={{ position: "relative" }}>
+          <button
+            className="dh-bell"
+            aria-label="Notifications"
+            onClick={() => {
+              setShowNoti(!showNoti);
+              setShowAvatarMenu(false);
+            }}
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && <span className="dh-noti-badge">{unreadCount}</span>}
+          </button>
+
+          {/* BOX THÔNG BÁO GIẢ LẬP */}
+          {showNoti && (
+            <div className="dh-dropdown dh-noti-dropdown">
+              <div className="dh-dropdown-header">
+                <h3>Thông báo mới</h3>
+                {unreadCount > 0 && <button onClick={markAllAsRead}>Đọc tất cả</button>}
+              </div>
+              <div className="dh-dropdown-list">
+                {notifications.length === 0 ? (
+                  <div className="dh-dropdown-empty">Không có thông báo nào</div>
+                ) : (
+                  notifications.map(n => (
+                    <div key={n.id} className={`dh-noti-item ${n.unread ? "unread" : ""}`}>
+                      <p className="dh-noti-text">{n.text}</p>
+                      <span className="dh-noti-time">{n.time}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* --- NÚT AVATAR M --- */}
+        <div style={{ position: "relative" }}>
+          <div
+            className="dh-avatar"
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              setShowAvatarMenu(!showAvatarMenu);
+              setShowNoti(false);
+            }}
+          >
+            M
+          </div>
+
+          {/* MENU DROPDOWN AVATAR */}
+          {showAvatarMenu && (
+            <div className="dh-dropdown dh-avatar-dropdown">
+              <div className="dh-user-info">
+                <strong>Mia Dang</strong>
+                <span>mia.dang@student.edu</span>
+              </div>
+              <hr />
+              <button className="dh-logout-btn" onClick={onLogout}>
+                <LogOut size={16} />
+                <span>Đăng xuất</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </motion.header>
   );
@@ -411,10 +494,12 @@ function Leaderboard() {
 }
 
 /* ---------- HOME CONTENT ---------- */
-function HomeContent() {
+// 🎯 Đã fix: Thêm nhận tham số onLogout từ component cha truyền xuống
+function HomeContent({ onLogout }: { onLogout: () => void }) {
   return (
     <>
-      <Header />
+      {/* 🎯 Đã fix: Truyền hàm onLogout vào Header */}
+      <Header onLogout={onLogout} />
       <DashboardCards />
 
       <div style={{ height: 24 }} />
@@ -480,13 +565,21 @@ export default function Dashboard({ onLogout }: DashboardProps) {
         <Sidebar active={active} setActive={setActive} onLogout={onLogout} />
 
         <main className="dh-main">
-          {active === 0 && <HomeContent />}
+          {/* 🎯 Đã fix: Truyền tiếp hàm onLogout vào HomeContent */}
+          {active === 0 && <HomeContent onLogout={onLogout} />}
           {active === 1 && <Documents />}
-          {active === 2 && <div style={{ padding: "32px", textAlign: "center" }}><h2>AI Chat Coming Soon</h2></div>}
+
+          {active === 2 && (
+            <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+              <AIChat />
+            </div>
+          )}
+
           {active === 3 && <div style={{ padding: "32px", textAlign: "center" }}><h2>Courses Coming Soon</h2></div>}
         </main>
       </motion.div>
-      <AIAssistant />
+
+      {active !== 2 && <AIAssistant />}
     </div>
   );
 }
