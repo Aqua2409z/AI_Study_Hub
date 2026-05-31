@@ -1,7 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Mail, Lock, User, Sparkles, ArrowRight, ArrowLeft, Check, X, Eye, EyeOff } from "lucide-react";
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import '../LoginPage/LoginPanel.css';
+
+// --- CẤU HÌNH NOTIFLIX GLOBAL ---
+// Đặt ngoài Component để chỉ khởi tạo duy nhất 1 lần khi ứng dụng load,
+// tránh việc bị re-init lãng phí tài nguyên mỗi khi component mount/unmount.
+Notify.init({
+  width: '300px',
+  position: 'right-top',
+  distance: '15px',
+  opacity: 1,
+  borderRadius: '20px',
+  timeout: 3000,
+  cssAnimationStyle: 'fade',
+  fontFamily: 'monospace',
+  maxVisibleNotifications: 3,
+  success: { background: '#10B981', textColor: '#fff' },
+  failure: { background: '#EF4444', textColor: '#fff' }
+} as any);
 
 interface LoginPanelProps {
   onLoginSuccess: () => void;
@@ -35,26 +52,15 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
 
   const strength = getPasswordStrength(password);
 
-  useEffect(() => {
-    Notify.init({
-      width: '300px',
-      position: 'right-top',
-      distance: '15px',
-      opacity: 1,
-      borderRadius: '20px',
-      timeout: 3000,
-      cssAnimationStyle: 'fade',
-      fontFamily: 'monospace',
-      maxVisibleNotifications: 3,
-      success: { background: '#10B981', textColor: '#fff' },
-      failure: { background: '#EF4444', textColor: '#fff' }
-    } as any);
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  // --- HÀM XỬ LÝ ĐĂNG NHẬP / ĐĂNG KÝ ---
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email.endsWith("@gmail.com")) {
+    // Chuẩn hóa dữ liệu đầu vào chống khoảng trắng thừa bí ẩn
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password;
+
+    if (!cleanEmail.endsWith("@gmail.com")) {
       Notify.failure("Email phải có định dạng @gmail.com");
       return;
     }
@@ -64,67 +70,85 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
         Notify.failure("Mật khẩu của bạn quá yếu! Vui lòng làm theo gợi ý.");
         return;
       }
-      if (password !== confirmPassword) {
+      if (cleanPassword !== confirmPassword) {
         Notify.failure("Mật khẩu nhập lại không trùng khớp!");
         return;
       }
     }
 
-    if (mode === "login" && password.length < 6) {
+    if (mode === "login" && cleanPassword.length < 6) {
       Notify.failure("Mật khẩu phải từ 6 ký tự trở lên");
       return;
     }
 
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      
+    try {
+      // GIẢ LẬP GỌI API (Sau này bạn chỉ cần thay đoạn này bằng axios.post / fetch)
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
       if (mode === "login") {
         Notify.success("Đăng nhập thành công!");
         setTimeout(() => {
           onLoginSuccess();
         }, 500);
       } else {
-        // XỬ LÝ KHI ĐĂNG KÝ THÀNH CÔNG: Trả về màn hình đăng nhập
+        // XỬ LÝ KHI ĐĂNG KÝ THÀNH CÔNG
         Notify.success("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
         setTimeout(() => {
           setMode("login");
-          // Giữ lại email vừa đăng ký để user đỡ phải nhập lại, chỉ xóa mật khẩu
           setPassword("");
           setConfirmPassword("");
           setFullName("");
         }, 500);
       }
-    }, 1200);
+    } catch (error) {
+      Notify.failure("Đã có lỗi xảy ra. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleOAuthLogin = (provider: "google" | "github") => {
+  // --- HÀM XỬ LÝ OAUTH (GOOGLE / GITHUB) ---
+  const handleOAuthLogin = async (provider: "google" | "github") => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
       Notify.success(`Kết nối ${provider} thành công!`);
       onLoginSuccess();
-    }, 1200);
+    } catch (error) {
+      Notify.failure(`Kết nối với ${provider} thất bại.`);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  // --- HÀM QUÊN MẬT KHẨU ---
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.endsWith("@gmail.com")) {
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail.endsWith("@gmail.com")) {
       Notify.failure("Email không hợp lệ!");
       return;
     }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setResetMessage(`Password reset link sent to ${email}.`);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setResetMessage(`Password reset link sent to ${cleanEmail}.`);
       Notify.success("Đã gửi link đặt lại mật khẩu!");
+      
       setTimeout(() => {
         setMode("login");
         setResetMessage("");
         setEmail("");
       }, 4000);
-    }, 1500);
+    } catch (error) {
+      Notify.failure("Gửi yêu cầu thất bại.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (mode === "forgot") {
@@ -336,6 +360,7 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
   );
 }
 
+// --- SUB-COMPONENT FIELD CHUNG ---
 interface FieldProps {
   Icon: React.ElementType;
   type: string;

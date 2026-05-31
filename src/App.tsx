@@ -4,17 +4,18 @@ import LoginPanel from "./components/LoginPage/LoginPanel";
 import Loader from "./components/LoginPage/Loader/Loader";
 import Dashboard from "./components/Dashboard/Dashboard";
 
-// --- 1. MÀN HÌNH DASHBOARD (Có thể tách ra file riêng Dashboard.tsx nếu cần) ---
-
-
 export default function App() {
+  // SỬA TẠI ĐÂY: Khởi tạo trạng thái đăng nhập từ localStorage bằng hàm callback (Lazy initialization)
+  // Giúp đọc dữ liệu cũ ngay khi vừa ấn F5, giữ nguyên trang Dashboard mà không bị đá về Login
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return localStorage.getItem("isLoggedIn") === "true";
+    const savedState = localStorage.getItem("isLoggedIn");
+    return savedState === "true";
   });
 
-  // Trạng thái hiển thị hiệu ứng chuyển cảnh
+  // Trạng thái hiển thị hiệu ứng chuyển cảnh (Chỉ dùng khi click đăng nhập từ form)
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // CẬP NHẬT: Rút gọn useEffect để đồng bộ trạng thái một cách tường minh hơn
   useEffect(() => {
     if (isLoggedIn) {
       localStorage.setItem("isLoggedIn", "true");
@@ -39,15 +40,15 @@ export default function App() {
 
   const handleLogout = () => {
     console.log("🚪 Đã logout");
-    setIsLoggedIn(false);
+    setIsLoggedIn(false); // Khi set false, useEffect ở trên sẽ tự động xóa sạch localStorage
   };
 
-  // ƯU TIÊN 1: Nếu đang trong trạng thái chuyển cảnh, bao phủ toàn bộ màn hình bằng Loader
+  // ƯU TIÊN 1: Nếu đang trong trạng thái chuyển cảnh đăng nhập, bao phủ toàn bộ màn hình bằng Loader
   if (isLoading) {
     return <Loader />;
   }
 
-  // ƯU TIÊN 2: Nếu đã đăng nhập thành công và hết tải, hiển thị giao diện Dashboard luôn
+  // ƯU TIÊN 2: Nếu đã đăng nhập thành công (hoặc vừa F5 mà có dữ liệu cũ), hiển thị giao diện Dashboard luôn
   if (isLoggedIn) {
     return <Dashboard onLogout={handleLogout} />;
   }
@@ -69,6 +70,6 @@ export default function App() {
           <LoginPanel onLoginSuccess={handleLoginSuccess} />
         </div>
       </div>
-    </div>
+    </div>  
   );
 }
