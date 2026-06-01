@@ -25,13 +25,17 @@ interface LoginPanelProps {
 }
 
 export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">(() => {
+    const savedMode = localStorage.getItem("loginPanelMode");
+    return (savedMode as "login" | "signup" | "forgot") || "login";
+  });
+  
   const [loading, setLoading] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); 
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [resetMessage, setResetMessage] = useState("");
 
   // --- HÀM KIỂM TRA ĐỘ MẠNH MẬT KHẨU ---
@@ -138,7 +142,7 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       setResetMessage(`Password reset link sent to ${cleanEmail}.`);
       Notify.success("Đã gửi link đặt lại mật khẩu!");
-      
+
       setTimeout(() => {
         setMode("login");
         setResetMessage("");
@@ -151,6 +155,7 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
     }
   };
 
+  
   if (mode === "forgot") {
     return (
       <div className="w-full">

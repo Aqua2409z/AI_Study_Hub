@@ -1,6 +1,7 @@
 import "./Dashboard.css";
 import AIAssistant from "./AIAssistant";
 import Documents from "./Documents";
+import Profile from "./Profile/Profile"; // 🎯 Import component Profile
 // 🎯 Import component AIChat
 import { AIChat } from "./AIChat/Aichat";
 import { useState } from "react";
@@ -10,7 +11,7 @@ import {
   Home, FileText, Bot, GraduationCap, Settings, LogOut,
   Bell, Gem, Coins, BookOpen, HardDrive, MessageSquare, Clock,
   Flame, Award, Heart, BookMarked, Library, ChevronRight, Trophy,
-  Plus, Search, TrendingUp, TrendingDown,
+  Plus, Search, TrendingUp, TrendingDown, User
 } from "lucide-react";
 
 interface DashboardProps {
@@ -57,10 +58,10 @@ const navItems = [
   { icon: GraduationCap, label: "Courses" },
 ];
 
-function Sidebar({ active, setActive, onLogout }: { active: number; setActive: (i: number) => void; onLogout: () => void }) {
+function Sidebar({ active, setActive }: { active: number; setActive: (i: number) => void }) {
   return (
     <motion.div className="dh-sidebar" variants={sidebarVariants as any}>
-      <div className="dh-logo">AI</div>
+      <div className="dh-logo" onClick={() => setActive(0)} style={{ cursor: "pointer" }}>AI</div>
       <nav className="dh-nav">
         {navItems.map((it, i) => {
           const Icon = it.icon;
@@ -73,29 +74,21 @@ function Sidebar({ active, setActive, onLogout }: { active: number; setActive: (
               className={`dh-nav-btn ${active === i ? "active" : ""}`}
               aria-label={it.label}
             >
-              
               <Icon size={20} />
             </motion.button>
-            
           );
         })}
       </nav>
-
-      <motion.button whileHover={{ scale: 1.1 }} className="dh-nav-btn" aria-label="Settings">
-        <Settings size={20} />
-      </motion.button>
-
-
+      {/* 🛠️ CODER FIX: Đã loại bỏ hoàn toàn nút Settings cơ đơn ở góc dưới này để làm sạch diện tích Sidebar */}
     </motion.div>
   );
 }
 
 /* ---------- HEADER WITH DROPDOWNS ---------- */
-function Header({ onLogout }: { onLogout: () => void }) {
+function Header({ onLogout, setActive }: { onLogout: () => void; setActive: (i: number) => void }) {
   const [showNoti, setShowNoti] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
 
-  // Giả lập danh sách thông báo
   const [notifications, setNotifications] = useState([
     { id: 1, text: "🤖 AI vừa tóm tắt xong tài liệu 'Calculus II'", time: "5 phút trước", unread: true },
     { id: 2, text: "🔥 Bạn vừa duy trì được Chuỗi học tập 5 ngày!", time: "2 giờ trước", unread: true },
@@ -116,7 +109,9 @@ function Header({ onLogout }: { onLogout: () => void }) {
       </h1>
 
       <div className="dh-header-right">
+        {/* 🚀 UX FEATURE ENHANCEMENT: Thêm ngọn lửa Streak (Chuỗi học tập) vào thanh điểm số */}
         <div className="dh-pill">
+          <span className="dh-pill-item" style={{ color: "#ef4444", fontWeight: "bold" }}><Flame size={16} fill="#ef4444" /> 5 Days</span>
           <span className="dh-pill-item" style={{ color: "#0ea5e9" }}><Gem size={16} /> 144</span>
           <span className="dh-pill-item" style={{ color: "#f59e0b" }}><Coins size={16} /> 2,321</span>
         </div>
@@ -135,7 +130,6 @@ function Header({ onLogout }: { onLogout: () => void }) {
             {unreadCount > 0 && <span className="dh-noti-badge">{unreadCount}</span>}
           </button>
 
-          {/* BOX THÔNG BÁO GIẢ LẬP */}
           {showNoti && (
             <div className="dh-dropdown dh-noti-dropdown">
               <div className="dh-dropdown-header">
@@ -171,14 +165,66 @@ function Header({ onLogout }: { onLogout: () => void }) {
             M
           </div>
 
-          {/* MENU DROPDOWN AVATAR */}
           {showAvatarMenu && (
             <div className="dh-dropdown dh-avatar-dropdown">
               <div className="dh-user-info">
-                <strong>Mia Dang</strong>
-                <span>mia.dang@student.edu</span>
+                <strong>Anh Khoa</strong>
+                <span>anhkhoa@fpt.edu.vn</span>
               </div>
               <hr />
+
+              {/* Nút thông tin tài khoản */}
+              <button
+                className="dh-dropdown-item"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  width: "100%",
+                  background: "none",
+                  border: "none",
+                  padding: "10px 12px",
+                  fontSize: "14px",
+                  color: "#334155",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  borderRadius: "6px"
+                }}
+                onClick={() => {
+                  setActive(4);
+                  setShowAvatarMenu(false);
+                }}
+              >
+                <User size={16} />
+                <span>Thông tin tài khoản</span>
+              </button>
+
+              {/* 🛠️ CODER MOVE: Đã chuyển đổi nút Cài đặt hệ thống lên đây */}
+              <button
+                className="dh-dropdown-item"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  width: "100%",
+                  background: "none",
+                  border: "none",
+                  padding: "10px 12px",
+                  fontSize: "14px",
+                  color: "#334155",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  borderRadius: "6px"
+                }}
+                onClick={() => {
+                  setActive(5); // Chuyển đổi trạng thái màn hình sang tab Cài đặt (index 5)
+                  setShowAvatarMenu(false);
+                }}
+              >
+                <Settings size={16} />
+                <span>Cài đặt cấu hình</span>
+              </button>
+
               <button className="dh-logout-btn" onClick={onLogout}>
                 <LogOut size={16} />
                 <span>Đăng xuất</span>
@@ -212,11 +258,7 @@ function DashboardCards() {
       {statCards.map((c) => {
         const Icon = c.icon;
         return (
-          <motion.div
-            key={c.label}
-            whileHover={{ y: -6 }}
-            className={`dh-stat ${c.bg}`}
-          >
+          <motion.div key={c.label} whileHover={{ y: -6 }} className={`dh-stat ${c.bg}`}>
             <div className="dh-stat-icon"><Icon size={18} /></div>
             <div className="dh-stat-label">{c.label}</div>
             <div className="dh-stat-value">{c.value}</div>
@@ -494,12 +536,10 @@ function Leaderboard() {
 }
 
 /* ---------- HOME CONTENT ---------- */
-// 🎯 Đã fix: Thêm nhận tham số onLogout từ component cha truyền xuống
-function HomeContent({ onLogout }: { onLogout: () => void }) {
+function HomeContent({ onLogout, setActive }: { onLogout: () => void; setActive: (i: number) => void }) {
   return (
     <>
-      {/* 🎯 Đã fix: Truyền hàm onLogout vào Header */}
-      <Header onLogout={onLogout} />
+      <Header onLogout={onLogout} setActive={setActive} />
       <DashboardCards />
 
       <div style={{ height: 24 }} />
@@ -562,11 +602,10 @@ export default function Dashboard({ onLogout }: DashboardProps) {
         initial="hidden"
         animate="visible"
       >
-        <Sidebar active={active} setActive={setActive} onLogout={onLogout} />
+        <Sidebar active={active} setActive={setActive} />
 
         <main className="dh-main">
-          {/* 🎯 Đã fix: Truyền tiếp hàm onLogout vào HomeContent */}
-          {active === 0 && <HomeContent onLogout={onLogout} />}
+          {active === 0 && <HomeContent onLogout={onLogout} setActive={setActive} />}
           {active === 1 && <Documents />}
 
           {active === 2 && (
@@ -576,10 +615,49 @@ export default function Dashboard({ onLogout }: DashboardProps) {
           )}
 
           {active === 3 && <div style={{ padding: "32px", textAlign: "center" }}><h2>Courses Coming Soon</h2></div>}
+
+          {/* Màn hình Profile (Mục số 4) */}
+          {active === 4 && <Profile onBack={() => setActive(0)} />}
+
+          {/* 🚀 UX FEATURE ENHANCEMENT: Thêm Layout Màn hình Cài đặt Hệ thống (Mục số 5) */}
+          {active === 5 && (
+            <div style={{ padding: "32px", color: "#1e293b" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+                <Settings size={28} className="text-slate-700" />
+                <h2 style={{ fontSize: "24px", fontWeight: "bold", margin: 0 }}>Cài đặt hệ thống</h2>
+              </div>
+              <p style={{ color: "#64748b", marginTop: "-16px", marginBottom: "32px" }}>Thay đổi cấu hình cá nhân hóa trải nghiệm học tập AI của bạn.</p>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "500px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                  <div>
+                    <strong style={{ display: "block", fontSize: "15px" }}>Chế độ tối (Dark Mode)</strong>
+                    <span style={{ fontSize: "12px", color: "#64748b" }}>Tiết kiệm pin và bảo vệ mắt khi học ban đêm</span>
+                  </div>
+                  <input type="checkbox" style={{ width: "40px", height: "20px", cursor: "pointer" }} />
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                  <div>
+                    <strong style={{ display: "block", fontSize: "15px" }}>Nhận thông báo qua Email</strong>
+                    <span style={{ fontSize: "12px", color: "#64748b" }}>Báo cáo khi AI hoàn tất tóm tắt giáo trình lớn</span>
+                  </div>
+                  <input type="checkbox" defaultChecked style={{ width: "40px", height: "20px", cursor: "pointer" }} />
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setActive(0)} 
+                style={{ marginTop: "32px", padding: "10px 20px", background: "#1e3a5f", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "500" }}
+              >
+                Quay lại Trang chủ
+              </button>
+            </div>
+          )}
         </main>
       </motion.div>
 
-      {active !== 2 && <AIAssistant />}
+      {active !== 2 && active !== 4 && active !== 5 && <AIAssistant />}
     </div>
   );
 }
