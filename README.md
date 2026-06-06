@@ -30,7 +30,7 @@ bun install
 
 ---
 
-## **📚 Tóm tắt các Class/Component chính:**
+## ** Tóm tắt các Class/Component chính:**
 
 ### **1. LoginPanel (src/components/LoginPage/LoginPanel.tsx)**
 - **Chức năng:** Component form chính xử lý đăng nhập/đăng ký/quên mật khẩu
@@ -96,4 +96,4 @@ npm run dev
 # Mở http://localhost:5173
 ```
 
-Dự án của bạn là một **3D animated login interface** với landing page showcase NFT collection, sử dụng GSAP animations, Lenis smooth scroll, và Tailwind CSS glass morphism design! 🎨✨
+Dự án **3D animated login interface** với landing page sử dụng GSAP animations, Lenis smooth scroll, và Tailwind CSS glass morphism design! 
