@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Mail, Twitter, Github, ChevronRight, Volume2, VolumeX, Play, Pause } from "lucide-react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "@studio-freight/lenis";
 
 const HERO_VIDEO = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_045634_e1c98c76-1265-4f5c-882a-4276f2080894.mp4";
 const ABOUT_VIDEO = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_151551_992053d1-3d3e-4b8c-abac-45f22158f411.mp4";
@@ -34,13 +37,127 @@ export default function OrbisLanding() {
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
 
-  // Lưu trữ danh sách các thẻ video để điều khiển tập trung
   const videoRefs = useRef<HTMLVideoElement[]>([]);
+  const lenisRef = useRef<Lenis | null>(null);
+  
+  // Đồng bộ hóa trạng thái Play/Pause thực tế vào Ref để GSAP callback đọc thời gian thực
+  const isPlayingRef = useRef(isPlaying);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
-  // 1. Tự động theo dõi vị trí cuộn trang để active thanh Menu Nav tương ứng
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const scrollContainer = document.getElementById("orbis-scroll-wrapper");
+    if (!scrollContainer) return;
+
+    const lenis = new Lenis({
+      wrapper: scrollContainer,
+      content: scrollContainer,
+      duration: 1.1,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    lenisRef.current = lenis;
+
+    lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+    gsap.ticker.lagSmoothing(0);
+
+    ScrollTrigger.defaults({ scroller: scrollContainer });
+
+    // --- TỐI ƯU HÓA VIDEO BẰNG SCROLLTRIGGER (CHỈ PHÁT KHI TRÔNG THẤY) ---
+    const setupVideoVisibilityControl = (triggerId: string) => {
+      const section = document.querySelector(triggerId);
+      const video = section?.querySelector("video");
+      if (video) {
+        ScrollTrigger.create({
+          trigger: triggerId,
+          start: "top bottom",
+          end: "bottom top",
+          onEnter: () => { if (isPlayingRef.current) video.play().catch(() => {}) },
+          onLeave: () => video.pause(),
+          onEnterBack: () => { if (isPlayingRef.current) video.play().catch(() => {}) },
+          onLeaveBack: () => video.pause(),
+        });
+      }
+    };
+
+    // Áp dụng lazy play cho các section lớn
+    setupVideoVisibilityControl("#homepage");
+    setupVideoVisibilityControl("#objectives");
+    setupVideoVisibilityControl("#our-journey");
+
+    // Áp dụng lazy play riêng cho từng thẻ card NFT trong Grid để tránh nổ RAM
+    document.querySelectorAll(".nft-card-trigger").forEach((card) => {
+      const vid = card.querySelector("video");
+      if (vid) {
+        ScrollTrigger.create({
+          trigger: card,
+          start: "top bottom",
+          end: "bottom top",
+          onEnter: () => { if (isPlayingRef.current) vid.play().catch(() => {}) },
+          onLeave: () => vid.pause(),
+          onEnterBack: () => { if (isPlayingRef.current) vid.play().catch(() => {}) },
+          onLeaveBack: () => vid.pause(),
+        });
+      }
+    });
+
+    // --- ANIMATION CREATIVE ---
+    gsap.to(".hero-title-trigger", {
+      scrollTrigger: {
+        trigger: "#homepage",
+        start: "top top",
+        end: "bottom center",
+        scrub: true,
+      },
+      y: -60,
+      opacity: 0.15,
+    });
+
+    gsap.fromTo(".objective-card-trigger", 
+      { opacity: 0, y: 40 },
+      {
+        scrollTrigger: {
+          trigger: "#objectives",
+          start: "top 80%",
+          end: "top 40%",
+          scrub: 1,
+        },
+        opacity: 1,
+        y: 0,
+        stagger: 0.08,
+      }
+    );
+
+    gsap.fromTo(".nft-card-trigger", 
+      { opacity: 0, y: 60, rotateX: 8 },
+      {
+        scrollTrigger: {
+          trigger: "#creators",
+          start: "top 85%",
+          end: "top 45%",
+          scrub: 1,
+        },
+        opacity: 1,
+        y: 0,
+        rotateX: 0,
+        stagger: 0.1,
+      }
+    );
+
+    return () => {
+      lenis.destroy();
+      ScrollTrigger.getAll().forEach((t) => t.kill());
+    };
+  }, []);
+
   useEffect(() => {
     const sections = NAV_ITEMS.map(item => document.getElementById(item.id));
-
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -49,17 +166,25 @@ export default function OrbisLanding() {
           }
         });
       },
-      { threshold: 0.4, rootMargin: "-10% 0px -40% 0px" }
+      { threshold: 0.3, rootMargin: "-10% 0px -40% 0px" }
     );
 
     sections.forEach(sec => sec && observer.observe(sec));
     return () => sections.forEach(sec => sec && observer.unobserve(sec));
   }, []);
 
-  // 2. Hàm Master Control điều khiển Trạng thái Chơi/Dừng và Âm thanh video
   const toggleMasterPlay = () => {
     videoRefs.current.forEach(v => {
-      if (v) isPlaying ? v.pause() : v.play().catch(() => { });
+      if (v) {
+        // Chỉ kích hoạt tương tác cho các video đang hiển thị trong màn hình để tối ưu hiệu năng nút bấm
+        const rect = v.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        if (isPlaying) {
+          v.pause();
+        } else if (isVisible) {
+          v.play().catch(() => {});
+        }
+      }
     });
     setIsPlaying(!isPlaying);
   };
@@ -80,17 +205,17 @@ export default function OrbisLanding() {
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (element && lenisRef.current) {
+      lenisRef.current.scrollTo(element, { offset: 0, duration: 1.2 });
       window.history.pushState(null, "", `#${id}`);
       setActiveSection(id);
     }
   };
 
   return (
-    <div className="bg-space text-cream font-mono select-none selection:bg-neon selection:text-space relative">
+    <div className="bg-space text-cream font-mono select-none selection:bg-neon selection:text-space relative perspective-1000 overflow-hidden">
 
-      {/* FLOATING CONTROLLER - THANH ĐIỀU KHIỂN MEDIA CƠ KHÍ GÓC MÀN HÌNH */}
+      {/* FLOATING CONTROLLER */}
       <div className="fixed bottom-6 right-6 z-50 flex gap-2 bg-[#020a21]/80 backdrop-blur-md border border-white/10 p-1.5 rounded-full shadow-2xl">
         <button
           onClick={toggleMasterPlay}
@@ -108,11 +233,11 @@ export default function OrbisLanding() {
         </button>
       </div>
 
-      {/* SECTION 1 — HERO (HOMEPAGE) */}
+      {/* SECTION 1 — HERO */}
       <section id="homepage" className="relative w-full min-h-screen overflow-hidden rounded-none">
         <video
           ref={registerVideoRef}
-          autoPlay
+          preload="metadata"
           loop
           muted={isMuted}
           playsInline
@@ -151,7 +276,7 @@ export default function OrbisLanding() {
             </div>
           </header>
 
-          <div className="flex-1 flex items-end pb-20 lg:pb-32">
+          <div className="flex-1 flex items-end pb-20 lg:pb-32 hero-title-trigger will-change-transform">
             <div className="relative lg:ml-32 max-w-[780px]">
               <h1 className="font-grotesk uppercase text-[40px] sm:text-[60px] md:text-[75px] lg:text-[90px] leading-[1.05] sm:leading-[1] tracking-tighter">
                 Beyond earth
@@ -172,11 +297,11 @@ export default function OrbisLanding() {
         </div>
       </section>
 
-      {/* SECTION 2 — ABOUT (OBJECTIVES) */}
+      {/* SECTION 2 — ABOUT */}
       <section id="objectives" className="relative w-full min-h-screen overflow-hidden">
         <video
           ref={registerVideoRef}
-          autoPlay
+          preload="metadata"
           loop
           muted={isMuted}
           playsInline
@@ -201,7 +326,6 @@ export default function OrbisLanding() {
             </p>
           </div>
 
-          {/* SỬA ĐỔI: Thay thế các đoạn chữ trùng lặp cũ thành lưới thông số cấu trúc cao cấp */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
             {[
               { num: "01 // CORE", title: "AUTONOMOUS LOGIC", desc: "Decentralized control mapping architecture across clusters." },
@@ -209,7 +333,7 @@ export default function OrbisLanding() {
               { num: "03 // TIME", title: "CHRONO INDEX", desc: "Immutably locked timestamp vectors processing matrix transformations." },
               { num: "04 // ZONE", title: "SPACE METRICS", desc: "Geometric coordinates mapped over localized simulated environments." }
             ].map((box, i) => (
-              <div key={i} className="bg-black/40 backdrop-blur-sm border border-white/5 p-6 rounded-2xl hover:border-white/20 transition-all duration-300">
+              <div key={i} className="objective-card-trigger will-change-transform bg-black/40 backdrop-blur-sm border border-white/5 p-6 rounded-2xl hover:border-white/20 transition-all duration-300">
                 <div className="text-[11px] text-neon font-bold tracking-widest mb-3">{box.num}</div>
                 <h4 className="font-grotesk text-sm text-white mb-2 tracking-wide">{box.title}</h4>
                 <p className="text-[12px] text-cream/50 leading-relaxed uppercase">{box.desc}</p>
@@ -219,7 +343,7 @@ export default function OrbisLanding() {
         </div>
       </section>
 
-      {/* SECTION 3 — GRID (CREATORS) */}
+      {/* SECTION 3 — GRID */}
       <section id="creators" className="bg-space py-20 lg:py-28">
         <div className="max-w-[1831px] mx-auto px-5 sm:px-8 lg:px-14">
           <div className="flex flex-col lg:flex-row justify-between items-start gap-10 mb-12">
@@ -246,12 +370,12 @@ export default function OrbisLanding() {
             {NFTS.map((n, index) => (
               <div
                 key={`nft-item-${index}-${n.score}`}
-                className="liquid-glass rounded-[32px] p-[18px] hover:bg-white/10 transition group"
+                className="nft-card-trigger will-change-transform liquid-glass rounded-[32px] p-[18px] hover:bg-white/10 transition group"
               >
                 <div className="relative w-full pb-[100%] rounded-[24px] overflow-hidden">
                   <video
                     ref={registerVideoRef}
-                    autoPlay
+                    preload="metadata"
                     loop
                     muted={isMuted}
                     playsInline
@@ -276,11 +400,11 @@ export default function OrbisLanding() {
         </div>
       </section>
 
-      {/* SECTION 4 — CTA (OUR JOURNEY) */}
+      {/* SECTION 4 — CTA */}
       <section id="our-journey" className="relative w-full min-h-screen flex items-center overflow-hidden">
         <video
           ref={registerVideoRef}
-          autoPlay
+          preload="metadata"
           loop
           muted={isMuted}
           playsInline
@@ -320,17 +444,14 @@ export default function OrbisLanding() {
         </div>
       </section>
 
-      {/* ==================== BRUTALIST & ORGANIC FOOTER ==================== */}
       <FooterOverride />
     </div>
   );
 }
 
-// --- NEW OVERHAULED FOOTER COMPONENT (NON-AI DESIGN) ---
 function FooterOverride() {
   const [time, setTime] = useState("");
 
-  // Cập nhật đồng hồ thời gian thực tế để tạo tính "Sống" cho hệ thống kỹ thuật số
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -343,11 +464,7 @@ function FooterOverride() {
 
   return (
     <footer className="bg-[#020514] border-t border-white/10 text-cream pt-16 pb-8 px-5 sm:px-8 lg:px-14 relative overflow-hidden">
-
-      {/* Khối Grid Bố cục Phi đối xứng (Kiểu Tạp chí / Portfolio Agency cao cấp) */}
       <div className="max-w-[1831px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16 items-start">
-
-        {/* Cột trái lớn (5 cột): Typography & Tọa độ */}
         <div className="md:col-span-5 space-y-6">
           <div className="text-[28px] font-grotesk tracking-tighter uppercase text-white leading-none">
             ORBIS / SYSTEM <br />
@@ -363,7 +480,6 @@ function FooterOverride() {
           </div>
         </div>
 
-        {/* Cột giữa (3 cột): Danh mục Điều hướng thô mộc */}
         <div className="md:col-span-3 space-y-4">
           <div className="text-[11px] font-bold text-cream/30 tracking-widest uppercase">// INDEX</div>
           <ul className="space-y-2 text-xs font-mono uppercase">
@@ -380,7 +496,6 @@ function FooterOverride() {
           </ul>
         </div>
 
-        {/* Cột giữa phải (2 cột): Network Link */}
         <div className="md:col-span-2 space-y-4">
           <div className="text-[11px] font-bold text-cream/30 tracking-widest uppercase">// NETWORKS</div>
           <ul className="space-y-2 text-xs font-mono uppercase">
@@ -390,7 +505,6 @@ function FooterOverride() {
           </ul>
         </div>
 
-        {/* Cột cuối phải (2 cột): Ghi chú Bản quyền Tối giản */}
         <div className="md:col-span-2 space-y-4 md:text-right">
           <div className="text-[11px] font-bold text-cream/30 tracking-widest uppercase">// INGESTION</div>
           <p className="text-[11px] uppercase text-cream/50 leading-relaxed">
@@ -399,10 +513,8 @@ function FooterOverride() {
         </div>
       </div>
 
-      {/* Đường vạch chia mảnh kỹ thuật */}
       <div className="w-full h-[1px] bg-white/5 my-12 max-w-[1831px] mx-auto" />
 
-      {/* Thanh Marquee chạy ngầm dưới đáy hoặc text dài tinh tế */}
       <div className="max-w-[1831px] mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center text-[10px] text-cream/30 uppercase font-mono tracking-widest gap-4">
         <div>ORBIS INTERACTIVE PROTOCOL v4.1.0</div>
         <div>DESIGN PRIVACY INSURED BY CORE ENCRYPTIONS</div>

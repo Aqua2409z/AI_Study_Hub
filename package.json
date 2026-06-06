@@ -9,11 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@studio-freight/lenis": "^1.0.42",
     "axios": "^1.16.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "framer-motion": "^12.40.0",
+    "gsap": "^3.15.0",
     "lucide-react": "^0.460.0",
     "mammoth": "^1.12.0",
+    "motion": "^12.40.0",
     "notiflix": "^3.2.8",
     "officeparser": "^7.1.0",
     "pdf-parse": "^2.4.5",
@@ -22,6 +26,7 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "recharts": "^3.8.1",
+    "tailwind-merge": "^3.6.0",
     "three": "^0.184.0",
     "zustand": "^5.0.14"
   },
