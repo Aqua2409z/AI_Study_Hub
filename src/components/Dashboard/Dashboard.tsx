@@ -14,7 +14,8 @@ import {
   Home, FileText, Bot, GraduationCap, BookOpen,
   Bell, Gem, Coins, HardDrive, MessageSquare, Clock,
   Flame, Award, Heart, BookMarked, Library, ChevronRight, Trophy,
-  Plus, Search, TrendingUp, TrendingDown, User, LogOut, X
+  Plus, Search, TrendingUp, TrendingDown, User, LogOut, X,
+  Sun, Moon
 } from "lucide-react";
 
 import { FloatingDock } from "../ui/floating-dock";
@@ -145,7 +146,17 @@ const dropdownVariants = {
   exit: { opacity: 0, y: -10, scale: 0.97 },
 };
 
-function Header({ onLogout, setActive }: { onLogout: () => void; setActive: (i: number) => void }) {
+function Header({
+  onLogout,
+  setActive,
+  isDarkMode,
+  toggleTheme
+}: {
+  onLogout: () => void;
+  setActive: (i: number) => void;
+  isDarkMode: boolean;
+  toggleTheme: () => void
+}) {
   const [showNoti, setShowNoti] = useState(false);
   const [showAvatarMenu, setShowAvatarMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -197,15 +208,26 @@ function Header({ onLogout, setActive }: { onLogout: () => void; setActive: (i: 
 
         <div style={{ position: "relative" }}>
           <button
-            className="dh-bell"
-            aria-label="Notifications"
-            onClick={() => {
-              setShowNoti(!showNoti);
-              setShowAvatarMenu(false);
+            onClick={toggleTheme}
+            className="dh-theme-toggle-btn"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "8px",
+              borderRadius: "50%",
+              transition: "all 0.2s"
             }}
+            title={isDarkMode ? "Chuyển sang chế độ sáng" : "Chuyển sang chế độ tối"}
           >
-            <Bell size={18} />
-            {unreadCount > 0 && <span className="dh-noti-badge">{unreadCount}</span>}
+            {isDarkMode ? (
+              <Sun size={19} className="text-yellow-400" />
+            ) : (
+              <Moon size={19} className="text-slate-600" />
+            )}
           </button>
 
           <AnimatePresence>
@@ -239,7 +261,6 @@ function Header({ onLogout, setActive }: { onLogout: () => void; setActive: (i: 
             )}
           </AnimatePresence>
         </div>
-
         <div style={{ position: "relative" }}>
           <div
             className="dh-avatar"
@@ -251,7 +272,6 @@ function Header({ onLogout, setActive }: { onLogout: () => void; setActive: (i: 
           >
             M
           </div>
-
           <AnimatePresence>
             {showAvatarMenu && (
               <motion.div
@@ -621,11 +641,22 @@ function Leaderboard() {
     </motion.div>
   );
 }
-function HomeContent({ onLogout, setActive }: { onLogout: () => void; setActive: (i: number) => void }) {
+function HomeContent({
+  onLogout,
+  setActive,
+  isDarkMode,
+  toggleTheme
+}: {
+  onLogout: () => void;
+  setActive: (i: number) => void;
+  isDarkMode: boolean;
+  toggleTheme: () => void
+}) {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   return (
     <>
-      <Header onLogout={onLogout} setActive={setActive} />
+      {/* Truyền tiếp state xuống Header */}
+      <Header onLogout={onLogout} setActive={setActive} isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
       <DashboardCards />
 
       <div style={{ height: 24 }} />
@@ -685,6 +716,25 @@ function HomeContent({ onLogout, setActive }: { onLogout: () => void; setActive:
 
 export default function Dashboard({ onLogout }: DashboardProps) {
   const [active, setActive] = useState(0);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") === "dark";
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDarkMode) {
+      root.classList.add("dark-mode");
+      localStorage.setItem("theme", "dark");
+    } else {
+      root.classList.remove("dark-mode");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
   const dockItems = [
     { title: "Home", icon: <Home />, onClick: () => setActive(0) },
@@ -696,7 +746,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
   ];
   const renderByActive = () => {
     switch (active) {
-      case 0: return <HomeContent onLogout={onLogout} setActive={setActive} />;
+      case 0: return <HomeContent onLogout={onLogout} setActive={setActive} isDarkMode={isDarkMode} toggleTheme={toggleTheme} />;
       case 1: return <Documents />;
       case 2: return <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}><AIChat /></div>;
       case 3: return <NotificationsPage />;

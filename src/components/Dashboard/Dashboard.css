@@ -220,32 +220,39 @@ select.clean-select {
 * {
   box-sizing: border-box;
 }
+
 .dh-dock-wrapper {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 999; /* Đảm bảo nổi trên các thành phần khác */
+  z-index: 999;
+  /* Đảm bảo nổi trên các thành phần khác */
 }
+
 .floating-dock-item {
-  border: 1px solid red !important; 
+  border: 1px solid red !important;
 }
+
 /* Ép buộc phần chứa input */
 .dh-search-container input {
-    background-color: #ffffff !important; /* Nền trắng */
-    color: #000000 !important;           /* Chữ đen */
+  background-color: #ffffff !important;
+  /* Nền trắng */
+  color: #000000 !important;
+  /* Chữ đen */
 }
 
 /* Đổi màu phần bọc icon nếu cần */
 .dh-search-container .icon-wrapper {
-    background-color: #ffffff !important;
-    color: #000000 !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
 }
 
 /* Đổi màu placeholder */
 .dh-search-container input::placeholder {
-    color: #94a3b8 !important;
+  color: #94a3b8 !important;
 }
+
 .dh-shell {
   width: 100%;
   padding: 24px;
@@ -1484,4 +1491,37 @@ select.clean-select {
    ══════════════════════════════════════════════════════════ */
 .dh-stat-value {
   font-variant-numeric: tabular-nums;
+}
+
+/* Màu mặc định dạng Light Mode */
+:root {
+  --bg-root: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #0f172a;
+  --border-color: #e2e8f0;
+}
+
+/* Tự động đổi màu khi bật Dark Mode */
+:root.dark-mode {
+  --bg-root: #0b0f19;
+  --bg-card: #131c2e;
+  --text-main: #f8fafc;
+  --border-color: #1e293b;
+}
+
+/* Áp dụng biến màu vào class cha tổng thể */
+.dh-root {
+  background-color: var(--bg-root);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Các khung panel/card tự nhận màu tương ứng */
+.dh-panel,
+.dh-stat,
+.dh-doc,
+.dh-challenge {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-main) !important;
 }

@@ -97,11 +97,8 @@ function IconContainer({
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Wrapper bọc icon co giãn theo chuột */}
             <motion.div
                 style={{ width: widthIcon, height: heightIcon }}
-                // Thêm các class Tailwind tinh chỉnh SVG dưới đây
                 className="flex items-center justify-center text-neutral-600 dark:text-neutral-300 [&>svg]:w-full [&>svg]:h-full"
             >
                 {icon}

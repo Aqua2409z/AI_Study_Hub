@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Mail, Twitter, Github, ChevronRight, Volume2, VolumeX, Play, Pause } from "lucide-react";
+import { Mail, Twitter, Github, ChevronRight, Volume2, VolumeX, Play, Pause, Sparkles, GraduationCap, Compass, Terminal, ArrowRightCircle } from "lucide-react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "@studio-freight/lenis";
 import TimeLineSection from "./LandingPage/TimeLineSection";
+
 // ─── ASSETS ────────────────────────────────────────────────────────────────────
 const HERO_VIDEO = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_045634_e1c98c76-1265-4f5c-882a-4276f2080894.mp4";
 const ABOUT_VIDEO = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_151551_992053d1-3d3e-4b8c-abac-45f22158f411.mp4";
@@ -25,38 +26,37 @@ const NAV_ITEMS = [
   { name: "CREATORS", id: "creators" },
   { name: "OUR JOURNEY", id: "our-journey" },
 ];
-
 const TIMELINE_DATA = [
   {
     date: "13 May '26",
-    phase: "Phase 01: Project Kickoff",
-    title: "REQUIREMENTS & SYSTEM ARCHITECTURE",
-    desc: "Khởi động dự án, thiết lập kho lưu trữ mã nguồn chung. Phân tích chi tiết yêu cầu phần mềm, phác thảo sơ đồ ERD và thiết kế Wireframe ban đầu.",
+    phase: "Tuần 1 - Tuần 2: Khởi tạo & Nghiên cứu",
+    title: "Phân tích yêu cầu & Thiết kế hệ thống",
+    desc: "Định hình kiến trúc AI Study Hub. Thiết kế cơ sở dữ liệu, sơ đồ ERD và tích hợp luồng xử lý dữ liệu thông minh cho các phân hệ core."
   },
   {
     date: "26 May '26",
-    phase: "Phase 02: Alpha Milestone",
-    title: "CORE FUNCTIONALITY & INTEGRATION",
-    desc: "Xây dựng các API cốt lõi và tích hợp hệ thống module logic. Cấu hình cơ sở dữ liệu nền tảng và kết nối kiểm thử dữ liệu mô phỏng theo thời gian thực.",
+    phase: "Tuần 3 - Tuần 4: Phát triển Tính năng Cốt lõi",
+    title: "Xây dựng lõi xử lý & Kết nối Mô hình AI",
+    desc: "Triển khai hệ thống phân tích tài liệu và tạo bài học tự động. Tích hợp và tối ưu hóa các cổng API mã nguồn mở/đóng để xử lý prompt."
   },
   {
     date: "09 June '26",
-    phase: "Phase 03: Midterm Progress",
+    phase: "Tuần 5 - Tuần 6: Đánh giá Giữa kỳ & Tối ưu",
     title: "MIDTERM EVALUATION & OPTIMIZATION",
-    desc: "Đánh giá chặng giữa, tối ưu hóa câu lệnh truy vấn và xử lý logic luồng bất đồng bộ. Hoàn thiện các cấu trúc nghiệp vụ cơ bản chuẩn bị cho giai đoạn mở rộng.",
+    desc: "Đánh giá chặng giữa, tối ưu hóa câu lệnh truy vấn và xử lý logic luồng bất đồng bộ. Hoàn thiện các cấu trúc nghiệp vụ cơ bản chuẩn bị cho giai đoạn mở rộng."
   },
   {
     date: "23 June '26",
-    phase: "Phase 04: Beta Deployment",
+    phase: "Tuần 7 - Tuần 8: Kiểm thử & Triển khai Thử nghiệm",
     title: "SYSTEM TESTING & STAGING",
-    desc: "Triển khai quy trình Unit Test và Integration Test. Khắc phục lỗ hổng hệ thống và phát hành phiên bản thử nghiệm trên môi trường Staging.",
+    desc: "Triển khai quy trình Unit Test và Integration Test cho các module AI. Khắc phục lỗ hổng hệ thống và phát hành phiên bản thử nghiệm trên môi trường Staging."
   },
   {
     date: "04 July '26",
-    phase: "Phase 05: Final Release",
+    phase: "Tuần 9 - Tuần 10: Hoàn thiện & Thuyết trình Dự án",
     title: "PRODUCTION READY & PRESENTATION",
-    desc: "Đóng gói mã nguồn hoàn chỉnh, cấu hình Production. Chuẩn bị tài liệu kỹ thuật, slide báo cáo tiếng Anh và nghiệm thu sản phẩm trước hội đồng.",
-  },
+    desc: "Đóng gói mã nguồn hoàn chỉnh, cấu hình Production. Chuẩn bị tài liệu kỹ thuật, slide báo cáo và tiến hành thuyết trình sản phẩm trước hội đồng."
+  }
 ];
 
 const REVEAL_TEXT =
@@ -73,32 +73,61 @@ function SocialBtn({ Icon }: { Icon: typeof Mail }) {
   );
 }
 
-// ─── MARQUEE BANNER ────────────────────────────────────────────────────────────
+// ─── TOP MARQUEE BANNER (XỬ LÝ TOÀN BỘ CSS TRỰC TIẾP QUA JSX & ICON) ────────────
 function TopMarqueeBanner() {
-  const text =
-    "SYSTEM STATUS: OPERATIONAL [ALL SERVICES GREEN] • WELCOME TO MIND SPACE — NEXT-GEN KNOWLEDGE PLATFORM • INITIALIZING AI CO-PILOT INTEGRATION 24/7 • CONNECTING TO FUOVERFLOW KNOWLEDGE BASE • ENGINEERED BY SWP_TEAM_4 • REVEAL WHAT'S HIDDEN, DEFINE WHAT'S NEXT • ";
+  // Mảng bóc tách text kết hợp icon từ Lucide thay cho dấu chấm tròn đại trà
+  const marqueeItems = [
+    { text: "WELCOME TO MIND SPACE — NEXT-GEN KNOWLEDGE PLATFORM", icon: <Sparkles size={13} className="text-space/80" /> },
+    { text: "AN ALL-NEW STUDY EXPERIENCE IS WAITING FOR YOU", icon: <GraduationCap size={13} className="text-space/80" /> },
+    { text: "EXPLORE, LEARN, AND DISCOVER TOGETHER", icon: <Compass size={13} className="text-space/80" /> },
+    { text: "CHÀO MỪNG BẠN ĐẾN VỚI KHÔNG GIAN HỌC TẬP THẾ HỆ MỚI", icon: <GraduationCap size={13} className="text-space/80" /> },
+    { text: "CÙNG CHÚNG TÔI KHÁM PHÁ VÀ ĐỊNH HÌNH TƯƠNG LAI", icon: <Sparkles size={13} className="text-space/80" /> },
+    { text: "ENGINEERED BY SWP-TEAM-4", icon: <Terminal size={13} className="text-space/80" /> },
+    { text: "ENTER THE HUB NOW!", icon: <ArrowRightCircle size={13} className="text-space/80" /> },
+  ];
+
+  // Nhân bản mảng để tạo vòng lặp vô tận không đứt đoạn
+  const doubleItems = [...marqueeItems, ...marqueeItems, ...marqueeItems, ...marqueeItems];
+
   return (
-    <>
-      <style>{`
-        @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-        .marquee-track { display:flex; width:max-content; animation:marquee 200s linear infinite; }
-        .marquee-track:hover { animation-play-state:paused; }
-      `}</style>
-      <div className="w-full bg-neon text-space py-4 overflow-hidden border-b border-white/10 z-50 relative select-none">
-        <div className="marquee-track font-mono text-[11px] font-bold tracking-[0.15em] uppercase flex items-center gap-10">
-          <span>{text.repeat(4)}</span>
-          <span>{text.repeat(4)}</span>
-        </div>
+    <div className="w-full bg-neon text-space py-3.5 overflow-hidden border-b border-white/10 z-50 relative select-none flex items-center">
+      {/* Sử dụng Inline Style cho animation và font để triệt tiêu hoàn toàn thẻ <style> cũ.
+        Animation 'marquee' được tính toán chuẩn -50% dịch chuyển tịnh tiến.
+      */}
+      <div
+        className="flex whitespace-nowrap gap-10 pr-10 items-center uppercase text-[11px] tracking-[0.15em]"
+        style={{
+          fontFamily: "'Montserrat', sans-serif",
+          fontWeight: 600,
+          animation: "marquee 60s linear infinite",
+          width: "max-content"
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.animationPlayState = "paused")}
+        onMouseLeave={(e) => (e.currentTarget.style.animationPlayState = "running")}
+      >
+        {doubleItems.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-4 inline-flex">
+            <span>{item.text}</span>
+            <div className="flex items-center justify-center">{item.icon}</div>
+          </div>
+        ))}
       </div>
-    </>
+
+      {/* Inject Keyframe trực tiếp qua inline style để tối ưu, không cần file config bên ngoài */}
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(0%); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
   );
 }
 
-// ─── FOOTER (LESA-style) ───────────────────────────────────────────────────────
+// ─── FOOTER ───────────────────────────────────────────────────────
 function Footer() {
   return (
     <footer className="relative bg-[#020514] overflow-hidden select-none">
-      {/* subtle grid overlay */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
@@ -107,9 +136,7 @@ function Footer() {
           backgroundSize: "80px 80px",
         }}
       />
-      {/* ── top content area ── */}
       <div className="relative z-10 max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pt-24 pb-16 flex flex-col items-center gap-12 text-center">
-        {/* CTA text */}
         <h2 className="font-grotesk font-bold text-[28px] sm:text-[36px] lg:text-[44px] text-white leading-[1.2] max-w-[680px]">
           AI Study Hub is set to launch in{" "}
           <span className="text-neon">Fall 2026.</span>
@@ -117,7 +144,6 @@ function Footer() {
           Join the waitlist today.
         </h2>
 
-        {/* Email input row */}
         <div className="flex flex-col sm:flex-row gap-3 w-full max-w-[520px]">
           <input
             type="email"
@@ -129,7 +155,6 @@ function Footer() {
           </button>
         </div>
 
-        {/* Contact + social row */}
         <div className="flex items-center gap-6 flex-wrap justify-center">
           <a
             href="mailto:swpteam4@fpt.edu.vn"
@@ -151,7 +176,6 @@ function Footer() {
           </div>
         </div>
 
-        {/* Links */}
         <div className="flex items-center gap-6 flex-wrap justify-center">
           {["Privacy Policy", "Cookie Settings", "API Docs", "Github Repo"].map((link, i) => (
             <a
@@ -164,19 +188,15 @@ function Footer() {
           ))}
         </div>
 
-        {/* Divider */}
         <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-        {/* Copyright row */}
         <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-3 text-[10px] font-mono uppercase tracking-widest text-cream/20">
           <span>© 2026 Mind Space. All rights reserved.</span>
           <span>Engineered by SWP_TEAM_4 · FPT University</span>
         </div>
       </div>
 
-      {/* ── BIG WORDMARK (LESA-style) ── */}
       <div className="relative z-10 w-full overflow-hidden leading-none">
-        {/* neon glow behind letters */}
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-neon/8 to-transparent pointer-events-none" />
         <p
           className="font-grotesk font-black uppercase text-center select-none"
@@ -229,7 +249,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
     gsap.ticker.lagSmoothing(0);
     ScrollTrigger.defaults({ scroller: scrollContainer });
 
-    // video play/pause on scroll
     const setupVideoTrigger = (selector: string) => {
       const section = document.querySelector(selector);
       const video = section?.querySelector("video");
@@ -262,7 +281,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       });
     });
 
-    // hero parallax
     gsap.to(".hero-video-parallax", {
       scrollTrigger: { trigger: "#homepage", start: "top top", end: "bottom top", scrub: true },
       yPercent: 20, ease: "none",
@@ -276,13 +294,12 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       y: -180, rotate: -5,
     });
 
-    // objectives video parallax
+
     gsap.to(".about-video-parallax", {
       scrollTrigger: { trigger: "#objectives", start: "top bottom", end: "bottom top", scrub: true },
       yPercent: 15, ease: "none",
     });
 
-    // word reveal for objectives
     const revealEl = document.getElementById("objectives-reveal-text");
     if (revealEl) {
       const words = REVEAL_TEXT.split(" ");
@@ -301,6 +318,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
         trigger: "#objectives",
         start: "top 75%",
         end: "bottom 15%",
+        scroller: scrollContainer,
         scrub: 0.6,
         onUpdate: (self) => {
           const p = self.progress;
@@ -315,7 +333,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       });
     }
 
-    // timeline rows
     document.querySelectorAll(".timeline-row").forEach((row) => {
       const dateText = row.querySelector(".timeline-date-text");
       const statusLine = row.querySelector(".timeline-line");
@@ -341,7 +358,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       });
     });
 
-    // NFT card parallax
     document.querySelectorAll(".nft-card-trigger").forEach((card, i) => {
       const speed = (i % 3 + 1) * 30;
       gsap.fromTo(card,
@@ -353,7 +369,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       );
     });
 
-    // CTA video parallax
     gsap.to(".cta-video-parallax", {
       scrollTrigger: { trigger: "#our-journey", start: "top bottom", end: "bottom top", scrub: true },
       yPercent: 20, ease: "none",
@@ -407,7 +422,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
     }
   };
 
-  // ── RENDER ──────────────────────────────────────────────────────────────────
   return (
     <div className="bg-space text-cream font-mono select-none selection:bg-neon selection:text-space relative perspective-1000 overflow-hidden">
       <TopMarqueeBanner />
@@ -442,7 +456,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
         </div>
 
         <div className="relative max-w-[1831px] mx-auto px-5 sm:px-8 lg:px-14 py-6 min-h-screen flex flex-col z-10">
-          {/* NAV */}
           <header className="flex items-center justify-between">
             <span className="font-grotesk text-[25px] uppercase tracking-wider text-white flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-neon animate-pulse" />
@@ -456,8 +469,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
                     <a
                       href={`#${item.id}`}
                       onClick={(e) => handleNavScroll(e, item.id)}
-                      className={`font-grotesk text-[13px] uppercase tracking-wider transition-all relative py-1 block ${activeSection === item.id ? "text-neon" : "text-cream/60 hover:text-cream"
-                        }`}
+                      className={`font-grotesk text-[13px] uppercase tracking-wider transition-all relative py-1 block ${activeSection === item.id ? "text-neon" : "text-cream/60 hover:text-cream"}`}
                     >
                       {item.name}
                       {activeSection === item.id && (
@@ -476,7 +488,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
             </div>
           </header>
 
-          {/* HERO COPY */}
           <div className="flex-1 flex items-end pb-20 lg:pb-32 hero-title-trigger will-change-transform">
             <div className="relative lg:ml-32 max-w-[780px]">
               <h1 className="font-grotesk uppercase text-[40px] sm:text-[60px] md:text-[75px] lg:text-[90px] leading-[1.05] sm:leading-[1] tracking-tighter">
@@ -484,8 +495,8 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
                 <br />
                 and ( its ) familiar boundaries
               </h1>
-              <span className="hero-subtitle-parallax font-condiment text-neon text-[24px] sm:text-[32px] md:text-[40px] lg:text-[48px] absolute -right-2 lg:right-8 top-2 -rotate-1 opacity-90 mix-blend-exclusion will-change-transform">
-                Nft collection
+              <span className="hero-subtitle-parallax font-condiment text-neon text-[24px] sm:text-[32px] md:text-[40px] lg:text-[48px] absolute -right-2 lg:right-8 top-2 -rotate-1 opacity-90 mix-blend-exclusion will-change-transform normal-case">
+                Academic Odyssey
               </span>
 
               <div className="mt-10 flex justify-center">
@@ -511,7 +522,8 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
         </div>
       </section>
 
-      {/* ── SECTION 2 · OBJECTIVES (LESA-style word reveal) ─────────────────── */}
+      {/* ── SECTION 2 · OBJECTIVES ─────────────────────────────────────────── */}
+      {/* ── SECTION 2 · OBJECTIVES ─────────────────────────────────────────── */}
       <section id="objectives" className="relative w-full min-h-screen overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <video
@@ -524,77 +536,81 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
             src={ABOUT_VIDEO}
           />
         </div>
+
         <div className="relative z-10 max-w-[1831px] mx-auto px-5 sm:px-8 lg:px-14 py-16 lg:py-24 min-h-screen flex flex-col justify-between gap-16">
-          <div className="flex flex-col lg:flex-row justify-between gap-10">
-            <div className="relative">
-              <h2 className="font-grotesk uppercase text-[32px] sm:text-[44px] lg:text-[60px] leading-[1]">
-                Hello!
-                <br />
-                I'm orbis
-              </h2>
-              <span className="font-condiment text-neon text-[36px] sm:text-[52px] lg:text-[68px] absolute -bottom-4 right-0 -rotate-3 mix-blend-exclusion">
-                Orbis
-              </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', width: '100%' }}>
+
+            {/* CONTAINER CHÍNH CỦA TIÊU ĐỀ VÀ MÔ TẢ */}
+            <div className="flex flex-col lg:flex-row justify-between items-start" style={{ gap: '40px' }}>
+
+              {/* KHỐI TIÊU ĐỀ BÊN TRÁI (Dùng font Syne phá cách) */}
+              <div style={{ position: 'relative', userSelect: 'none' }}>
+                <h2 style={{
+                  fontFamily: "'Syne', sans-serif",
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  fontSize: 'clamp(36px, 5vw, 64px)',
+                  lineHeight: 0.95,
+                  letterSpacing: '-0.03em',
+                  color: '#ffffff',
+                  margin: 0
+                }}>
+                  Hello!<br />I'm orbis
+                </h2>
+
+                {/* Chữ ký đè lên tiêu đề chính */}
+                <span className="font-condiment text-neon" style={{
+                  fontSize: 'clamp(36px, 5vw, 68px)',
+                  position: 'absolute',
+                  bottom: '-16px',
+                  right: 0,
+                  transform: 'rotate(-3deg)',
+                  mixBlendMode: 'exclusion',
+                  pointerEvents: 'none'
+                }}>
+                  Orbis
+                </span>
+              </div>
+
+              {/* KHỐI MÔ TẢ BÊN PHẢI (Nội dung chuẩn AI Study Hub tại FPTU + Font JetBrains Mono) */}
+              <p className="text-cream/80"
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 'clamp(11px, 2vw, 13px)',
+                  textTransform: 'uppercase',
+                  maxWidth: '340px',
+                  lineHeight: 1.6,
+                  letterSpacing: '0.08em',
+                  borderLeft: '1px solid #00f2fe',
+                  paddingLeft: '20px',
+                  paddingTop: '4px',
+                  margin: 0,
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.borderLeftColor = '#00ffff';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.color = 'rgba(245, 245, 220, 0.8)';
+                  e.currentTarget.style.borderLeftColor = '#00f2fe';
+                }}>
+                The goal of AI Study Hub is to boost the joy of learning and enhance knowledge skills for students at FPT University. Let's make studying a fun adventure!
+              </p>
+
             </div>
-            <p className="font-mono text-[14px] lg:text-[15px] uppercase text-cream/90 max-w-[320px] leading-relaxed border-l-2 border-neon pl-4">
-              A digital object fixed beyond time and place. An exploration of distance, form, and
-              silence in deep space exploration systems.
-            </p>
           </div>
+
+          {/* PHẦN HIỆU ỨNG TEXT REVEAL CHẠY CHỮ KHI CUỘN CHUỘT */}
           <p
             id="objectives-reveal-text"
-            className="text-center font-grotesk font-bold text-[28px] sm:text-[36px] lg:text-[48px] leading-[1.25] max-w-[900px]"
-          ></p>
-
+            className="text-center font-grotesk font-bold text-[28px] sm:text-[36px] lg:text-[48px] leading-[1.25] max-w-[900px] mx-auto"
+          />
         </div>
       </section>
-
       {/* SECTION: SCROLL TIMELINE */}
-
-      {/* <section id="timeline" className="relative w-full bg-[#050b1a] py-24 lg:py-36 border-t border-b border-white/5 overflow-hidden">
-        <div className="max-w-[1831px] mx-auto px-5 sm:px-8 lg:px-14">
-          <div className="mb-20">
-            <h2 className="font-grotesk uppercase text-[32px] sm:text-[44px] lg:text-[60px] leading-[1]">
-              DEVELOPMENT <br />
-              <span className="font-condiment text-neon normal-case tracking-normal">Journey</span> Milestones
-            </h2>
-          </div>
-
-          <div className="relative flex flex-col w-full">
-            {TIMELINE_DATA.map((item, index) => (
-              <div key={index} className="timeline-row grid grid-cols-12 gap-4 md:gap-8 min-h-[45vh] items-start relative py-6">
-                <div className="col-span-12 md:col-span-4 flex items-center md:justify-end md:text-right sticky top-1/2">
-                  <div className="timeline-date-text text-[32px] sm:text-[40px] lg:text-[52px] font-grotesk uppercase leading-none opacity-20 transition-all duration-300 text-cream whitespace-nowrap">
-                    {item.date}
-                  </div>
-                </div>
-
-                <div className="hidden md:col-span-1 md:flex justify-center h-full absolute left-1/3 transform -translate-x-1/2 top-0 bottom-0">
-                  <div className="w-[1px] h-full bg-white/10 relative flex justify-center">
-                    <div className="timeline-line absolute top-0 bottom-0 w-[2px] bg-white/10 scale-y-[0.3] origin-top transition-all duration-300" />
-                    <div className="w-3 h-3 rounded-full bg-space border-2 border-white/30 absolute top-2 z-10 shadow-sm" />
-                  </div>
-                </div>
-
-                <div className="col-span-12 md:col-span-7 md:pl-8">
-                  <div className="timeline-content-card liquid-glass bg-black/20 border border-white/5 p-6 sm:p-8 rounded-[24px] transition-all duration-300 hover:border-white/10">
-                    <span className="text-[11px] text-neon font-bold tracking-widest block mb-2 uppercase">
-                      {item.phase}
-                    </span>
-                    <h3 className="font-grotesk text-lg sm:text-xl text-white mb-4 tracking-wide uppercase">
-                      {item.title}
-                    </h3>
-                    <p className="text-[13px] text-cream/60 leading-relaxed font-sans font-light">
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section> */}
       <TimeLineSection TIMELINE_DATA={TIMELINE_DATA} />
+
       {/* ── SECTION 4 · CREATORS GRID ───────────────────────────────────────── */}
       <section id="creators" className="bg-space py-20 lg:py-28 overflow-hidden">
         <div className="max-w-[1831px] mx-auto px-5 sm:px-8 lg:px-14">

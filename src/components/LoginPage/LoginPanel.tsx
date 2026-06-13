@@ -226,14 +226,12 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
 
   // HÀM XỬ LÝ KHI USER HOÀN THÀNH HOẶC BỎ QUA KHUNG COMBO FORM
   const handleFinishCombo = () => {
+    // User bấm X bỏ qua form -> vào hub với credentials cũ
     const token = localStorage.getItem("auth_token") || "";
     const userStr = localStorage.getItem("auth_user");
     const user = userStr ? JSON.parse(userStr) : { email: "", role: "student" };
-
-    // Gọi callback gốc để chuyển hướng vào ứng dụng chính (Dashboard/Hub)
     onLoginSuccess(token, user);
   };
-
   return (
     <AnimatePresence mode="wait">
       {showCombo ? (
@@ -247,7 +245,12 @@ export default function LoginPanel({ onLoginSuccess }: LoginPanelProps) {
           className="w-full max-w-xl mx-auto p-4"
         >
           {/* Khi user tắt form hoặc hoàn tất đăng ký mới, hệ thống sẽ đưa vào Hub */}
-          <FPTComboForm onClose={handleFinishCombo} />
+          <FPTComboForm
+            onClose={handleFinishCombo}
+            onLoginSuccess={(email: string) => {
+              onLoginSuccess(email, { email, role: "student" });
+            }}
+          />
         </motion.div>
       ) : (
         /* MÀN HÌNH ĐĂNG NHẬP GỐC */

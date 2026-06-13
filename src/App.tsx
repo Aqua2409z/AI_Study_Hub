@@ -1,55 +1,75 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import OrbisLanding from "./components/LoginPage/OrbisLanding";
-// 1. MỞ COMMENT DÒNG IMPORT NÀY
 import LoginPanel from "./components/LoginPage/LoginPanel";
 import Loader from "./components/LoginPage/Loader/Loader";
 import Dashboard from "./components/Dashboard/Dashboard";
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    const savedState = localStorage.getItem("isLoggedIn");
-    return savedState === "true";
-  });
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  
-  // 2. THÊM STATE NÀY ĐỂ QUẢN LÝ ẨN/HIỆN LOGIN PANEL
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showLoginPanel, setShowLoginPanel] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string>("");
 
+  // 1. Kiểm tra trạng thái đăng nhập cũ khi F5 ứng dụng
   useEffect(() => {
-    if (isLoggedIn) {
-      localStorage.setItem("isLoggedIn", "true");
-    } else {
-      localStorage.removeItem("isLoggedIn");
-    }
-  }, [isLoggedIn]);
+    const savedState = localStorage.getItem("isLoggedIn");
+    const savedEmail = localStorage.getItem("userEmail");
 
-  const handleLoginSuccess = () => {
-    setIsLoading(true);
+    if (savedState === "true") {
+      setIsLoggedIn(true);
+      if (savedEmail) setUserEmail(savedEmail);
+
+      // Nếu đã đăng nhập sẵn, cho chạy Loader nhẹ 2s rồi vào thẳng Dashboard
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    } else {
+      // Nếu chưa đăng nhập, tắt loader ngay để hiển thị OrbisLanding
+      setIsLoading(false);
+    }
+  }, []);
+
+  // 2. Hàm kích hoạt NGAY KHI nhấn nút "Tiến vào Hub ngay" từ màn hình đăng ký thành công
+  const handleLoginSuccess = (emailFromForm?: string) => {
+    setIsLoading(true); // BẬT LOADER CỦA APP LÊN NGAY LẬP TỨC
+
+    const finalEmail = emailFromForm || "anhkhoa@fpt.edu.vn";
+    setUserEmail(finalEmail);
+    localStorage.setItem("userEmail", finalEmail);
+
+    // Loader chạy đúng 2.5 giây rồi tự động đá thẳng vào Dashboard xịn
     setTimeout(() => {
       setIsLoggedIn(true);
+      localStorage.setItem("isLoggedIn", "true");
       setIsLoading(false);
-      setShowLoginPanel(false); // Đăng nhập xong thì ẩn panel đi luôn
+      setShowLoginPanel(false);
     }, 2500);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userEmail");
     setIsLoggedIn(false);
+    setUserEmail("");
   };
 
+  // ƯU TIÊN 1: Đang trong quá trình chuyển cảnh hoặc check auth -> Chỉ hiển thị Loader bao sân toàn màn hình
   if (isLoading) {
     return <Loader />;
   }
 
+  // ƯU TIÊN 2: Đã login thành công -> Tiến thẳng vào Dashboard
   if (isLoggedIn) {
     return <Dashboard onLogout={handleLogout} />;
   }
 
+  // LUỒNG HIỂN THỊ BAN ĐẦU KHI CHƯA ĐĂNG NHẬP
   return (
     <div className="flex w-screen h-screen overflow-hidden bg-space relative">
-      
-      {/* 3. DIỆN TÍCH HIỂN THỊ ORBIS LANDING */}
-      {/* Nếu không showLoginPanel thì full màn hình, nếu show thì có thể ẩn đi hoặc thu nhỏ tùy layout bạn muốn */}
       {!showLoginPanel ? (
         <div
           id="orbis-scroll-wrapper"
@@ -58,25 +78,21 @@ export default function App() {
           <style>{`
             .hide-scrollbar::-webkit-scrollbar { display: none; }
           `}</style>
-
-          {/* KHI ẤN NÚT THÌ SET STATE THÀNH TRUE */}
           <OrbisLanding onLoginClick={() => setShowLoginPanel(true)} />
         </div>
       ) : (
-        // 4. HIỂN THỊ LOGIN PANEL KHI STATE LÀ TRUE
-        // Thêm nút Back nếu bạn muốn người dùng quay lại Landing Page từ LoginPanel
         <div className="w-full h-full flex items-center justify-center relative animate-fade-in">
-          <button 
-            onClick={() => setShowLoginPanel(false)} 
+          <button
+            onClick={() => setShowLoginPanel(false)}
             className="absolute top-6 left-6 text-xs uppercase tracking-widest text-neon border border-neon/30 px-4 py-2 hover:bg-neon hover:text-space transition-all duration-300"
           >
             ← Back to journey
           </button>
-          
-          <LoginPanel onLoginSuccess={handleLoginSuccess} />
+
+          {/* Nhận callback từ LoginPanel bắn ra khi click "Tiến vào Hub ngay" */}
+          <LoginPanel onLoginSuccess={(token, user) => handleLoginSuccess(user.email)} />
         </div>
       )}
-
     </div>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Send, CheckCircle2, X } from "lucide-react";
-
+import Loader from "./Loader"
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface Campus {
@@ -39,7 +39,6 @@ const CAMPUSES: Campus[] = [
   { city: "Đà Nẵng", address: "FPT City" },
   { city: "Cần Thơ", address: "Khu đô thị Hưng Phú" },
   { city: "Quy Nhơn", address: "Khu công nghệ cao" },
-  { city: "Cần Thơ II", address: "Thực nghiệm" },
 ];
 
 const COMBOS: Combo[] = [
@@ -70,32 +69,12 @@ const COMBOS: Combo[] = [
     description:
       "Nền tảng design vững chắc kết hợp tư duy UX. Phù hợp cho Product Designer, UI/UX Designer tại các công ty tech.",
   },
-  {
-    id: "CS_CY",
-    name: "Khoa học máy tính + An ninh mạng",
-    code: "CS + CyberSec",
-    icon: "🔐",
-    tags: ["Bảo mật", "System"],
-    description:
-      "Nắm vững lý thuyết khoa học máy tính, chuyên sâu bảo mật hệ thống. Cơ hội tại các tập đoàn tài chính, chính phủ.",
-  },
-  {
-    id: "MK_DM",
-    name: "Marketing + Digital Marketing",
-    code: "MK + DM",
-    icon: "📱",
-    tags: ["Truyền thông", "Viral"],
-    description:
-      "Marketing truyền thống kết hợp kỹ năng digital. Ra trường làm Performance Marketer, Growth Hacker, Brand Manager.",
-  },
 ];
 
 const MINORS: Record<string, string[]> = {
   SE_AI: ["Blockchain", "Cloud Computing", "Embedded Systems", "Game Development"],
   BA_DS: ["FinTech", "Supply Chain", "Healthcare Analytics", "E-commerce"],
   GD_UX: ["Motion Design", "3D & AR/VR", "Brand Identity", "Service Design"],
-  CS_CY: ["Penetration Testing", "DevSecOps", "Forensics", "IoT Security"],
-  MK_DM: ["Content Strategy", "SEO/SEM", "Influencer Marketing", "Marketing Analytics"],
 };
 
 // ─── Step Indicator ────────────────────────────────────────────────────────────
@@ -112,13 +91,12 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
         return (
           <React.Fragment key={step}>
             <div
-              className={`h-2 rounded-full transition-all duration-300 ${
-                isDone
-                  ? "bg-orange-500 w-6"
-                  : isActive
+              className={`h-2 rounded-full transition-all duration-300 ${isDone
+                ? "bg-orange-500 w-6"
+                : isActive
                   ? "bg-orange-500 w-8"
                   : "bg-gray-200 w-6"
-              }`}
+                }`}
             />
           </React.Fragment>
         );
@@ -203,10 +181,9 @@ function Btn({
       onClick={onClick}
       disabled={disabled}
       className={`inline-flex items-center gap-1.5 h-10 px-5 rounded-xl text-sm font-medium transition-all
-        ${
-          primary
-            ? "bg-orange-500 hover:bg-orange-600 text-white"
-            : "border border-gray-200 text-gray-700 hover:bg-gray-50"
+        ${primary
+          ? "bg-orange-500 hover:bg-orange-600 text-white"
+          : "border border-gray-200 text-gray-700 hover:bg-gray-50"
         }
         disabled:opacity-40 disabled:cursor-not-allowed`}
     >
@@ -248,11 +225,6 @@ function Step1({
   onChange: (patch: Partial<FormState>) => void;
   onNext: () => void;
 }) {
-  const handleNext = () => {
-    if (!data.name.trim() || !data.email.trim()) return;
-    onNext();
-  };
-
   return (
     <FormCard
       stepLabel="Bước 1"
@@ -262,7 +234,7 @@ function Step1({
       footer={
         <>
           <span className="text-xs text-gray-400">Thông tin được bảo mật</span>
-          <Btn primary onClick={handleNext} disabled={!data.name || !data.email}>
+          <Btn primary onClick={onNext} disabled={!data.name || !data.email}>
             Tiếp theo <ArrowRight size={14} />
           </Btn>
         </>
@@ -344,11 +316,10 @@ function Step2({
           <button
             key={c.city}
             onClick={() => onChange({ campus: c.city })}
-            className={`text-left p-3 rounded-xl border-2 transition-all ${
-              data.campus === c.city
-                ? "border-orange-500 bg-orange-50"
-                : "border-gray-200 hover:border-orange-200"
-            }`}
+            className={`text-left p-3 rounded-xl border-2 transition-all ${data.campus === c.city
+              ? "border-orange-500 bg-orange-50"
+              : "border-gray-200 hover:border-orange-200"
+              }`}
           >
             <p className="text-sm font-semibold text-gray-900">{c.city}</p>
             <p className="text-xs text-gray-400 mt-0.5 leading-snug">{c.address}</p>
@@ -396,9 +367,8 @@ function Step3({
             <button
               key={c.id}
               onClick={() => onChange({ combo: c.id, minor: "" })}
-              className={`text-left rounded-xl border-2 transition-all overflow-hidden ${
-                selected ? "border-orange-500" : "border-gray-200 hover:border-orange-200"
-              }`}
+              className={`text-left rounded-xl border-2 transition-all overflow-hidden ${selected ? "border-orange-500" : "border-gray-200 hover:border-orange-200"
+                }`}
             >
               <div className="flex items-start gap-3 p-3">
                 <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center text-lg flex-shrink-0">
@@ -407,25 +377,10 @@ function Step3({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 leading-snug">{c.name}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{c.code}</p>
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {c.tags.map((t) => (
-                      <span
-                        key={t}
-                        className={`text-xs px-2 py-0.5 rounded-full border ${
-                          t === "Hot"
-                            ? "bg-orange-50 text-orange-600 border-orange-200"
-                            : "bg-gray-50 text-gray-500 border-gray-200"
-                        }`}
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
                 </div>
                 <div
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
-                    selected ? "bg-orange-500 border-orange-500" : "border-gray-300"
-                  }`}
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${selected ? "bg-orange-500 border-orange-500" : "border-gray-300"
+                    }`}
                 >
                   {selected && <span className="text-white text-xs">✓</span>}
                 </div>
@@ -465,7 +420,7 @@ function Step35({
     <FormCard
       stepLabel="Bước 3 · Môn phụ"
       title="Chọn môn phụ"
-      description={`Chuyên sâu dành riêng cho combo ${combo.name}`}
+      description={`Chuyên sâu dành riêng cho combo ${combo?.name}`}
       stepKey="step35"
       footer={
         <>
@@ -483,20 +438,16 @@ function Step35({
           <button
             key={m}
             onClick={() => onChange({ minor: m })}
-            className={`text-left p-3.5 rounded-xl border-2 transition-all ${
-              data.minor === m
-                ? "border-orange-500 bg-orange-50"
-                : "border-gray-200 hover:border-orange-200"
-            }`}
+            className={`text-left p-3.5 rounded-xl border-2 transition-all ${data.minor === m
+              ? "border-orange-500 bg-orange-50"
+              : "border-gray-200 hover:border-orange-200"
+              }`}
           >
             <p className="text-sm font-semibold text-gray-900">{m}</p>
             <p className="text-xs text-gray-400 mt-0.5">Chuyên sâu {m.toLowerCase()}</p>
           </button>
         ))}
       </div>
-      <p className="text-xs text-gray-400 mt-3 text-center">
-        Môn phụ là tùy chọn, bạn có thể bỏ qua
-      </p>
     </FormCard>
   );
 }
@@ -541,28 +492,20 @@ function Step4({
     >
       <div className="flex flex-col gap-3">
         <div className="bg-gray-50 rounded-xl p-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Thông tin cá nhân
-          </p>
           <ReviewRow label="Họ và tên" value={data.name} />
           <ReviewRow label="Email" value={data.email} />
           {data.phone && <ReviewRow label="Điện thoại" value={data.phone} />}
-          {data.dob && <ReviewRow label="Ngày sinh" value={data.dob} />}
         </div>
         <div className="bg-gray-50 rounded-xl p-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Lựa chọn ngành
-          </p>
           <ReviewRow label="Campus" value={data.campus} />
           <ReviewRow
             label="Ngành combo"
             value={
               <span className="inline-flex items-center gap-1.5 bg-orange-500 text-white text-xs font-semibold px-3 py-1 rounded-lg">
-                {combo.icon} {combo.name}
+                {combo?.icon} {combo?.name}
               </span>
             }
           />
-          {data.minor && <ReviewRow label="Môn phụ" value={data.minor} />}
         </div>
       </div>
     </FormCard>
@@ -571,34 +514,37 @@ function Step4({
 
 // ─── Success ───────────────────────────────────────────────────────────────────
 
-function SuccessScreen({ name, email, onReset }: { name: string; email: string; onReset: () => void }) {
+function SuccessScreen({ name, onRedirect }: { name: string; onRedirect: () => void }) {
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center min-h-[350px] flex flex-col items-center justify-center">
+      {/* Bỏ hết điều kiện loading, chỉ render giao diện chúc mừng */}
       <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
         <CheckCircle2 size={32} className="text-orange-500" />
       </div>
       <h2 className="text-xl font-bold text-gray-900 mb-2">Đăng ký thành công!</h2>
       <p className="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
-        Cảm ơn bạn <strong className="text-gray-800">{name}</strong>! Bộ phận tư vấn FPT University
-        sẽ liên hệ qua email{" "}
-        <strong className="text-gray-800">{email}</strong> trong vòng 24–48 giờ.
+        Cảm ơn bạn <strong className="text-gray-800">{name}</strong>! Hệ thống đang xử lý hồ sơ dữ liệu liên kết của bạn.
       </p>
       <button
-        onClick={onReset}
+        onClick={onRedirect} // ← Gọi thẳng, không delay ở đây nữa
         className="mt-6 inline-flex items-center gap-1.5 h-10 px-5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-all"
       >
-        Đăng ký mới
+        Tiến vào Hub ngay <ArrowRight size={14} />
       </button>
     </div>
   );
 }
-
 // ─── Root Component ───────────────────────────────────────────────────────────
 
 const TOTAL_STEPS = 4;
 
-export default function FPTComboForm({ onClose }: { onClose?: () => void }) {
-  // step: 1 | 2 | 3 | 3.5 | 4 | 5(success)
+interface FPTComboFormProps {
+  onClose?: () => void;
+  onLoginSuccess: (email: string) => void;
+}
+
+export default function FPTComboForm({ onClose, onLoginSuccess }: FPTComboFormProps) {
   const [step, setStep] = useState<number>(1);
   const [form, setForm] = useState<FormState>({
     name: "",
@@ -611,24 +557,32 @@ export default function FPTComboForm({ onClose }: { onClose?: () => void }) {
   });
 
   const patch = (p: Partial<FormState>) => setForm((f) => ({ ...f, ...p }));
-
   const displayStep = step === 3.5 ? 3 : step >= 4 ? 4 : step;
 
+  // Luồng tự động chuyển sau 4 giây ở màn hình thành công
+  useEffect(() => {
+    if (step === 5) {
+      const timerToLoader = setTimeout(() => {
+        onLoginSuccess(form.email);
+      }, 4000);
+      return () => clearTimeout(timerToLoader);
+    }
+  }, [step, form.email, onLoginSuccess]);
+
+  const handleForceRedirect = () => {
+    onLoginSuccess(form.email);
+  };
+
+  // NẾU LÀ BƯỚC 5: Chỉ render màn hình chúc mừng, KHÔNG CÓ đoạn mã render dashboard nào bên dưới nữa
   if (step === 5) {
     return (
-      <div className="w-full max-w-xl mx-auto">
-        <SuccessScreen
-          name={form.name}
-          email={form.email}
-          onReset={() => {
-            setStep(1);
-            setForm({ name: "", email: "", phone: "", dob: "", campus: "", combo: "", minor: "" });
-          }}
-        />
+      <div className="w-full max-w-xl mx-auto animate-fade-in">
+        <SuccessScreen name={form.name} onRedirect={handleForceRedirect} />
       </div>
     );
   }
 
+  // CÁC BƯỚC NHẬP LIỆU (1 -> 4)
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col gap-4">
       {/* Header */}
@@ -648,7 +602,7 @@ export default function FPTComboForm({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      {/* Steps */}
+      {/* Steps Handler */}
       <AnimatePresence mode="wait">
         {step === 1 && (
           <Step1 key="s1" data={form} onChange={patch} onNext={() => setStep(2)} />
