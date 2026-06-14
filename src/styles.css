@@ -1,4 +1,19 @@
 @import "tailwindcss";
+
+@font-face {
+    font-family: "Camera Plain Variable";
+    src: url("/fonts/CameraPlainVariable-c48bd243.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: block;
+}
+
+.app-shell-font {
+    --font-sans: "Camera Plain Variable", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Camera Plain Variable", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-sans) !important;
+}
+
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
@@ -105,38 +120,38 @@ body {
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: var(--color-cream, oklch(0.97 0.01 90));
+  --foreground: var(--color-ink, oklch(0.18 0.02 250));
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: var(--color-ink, oklch(0.18 0.02 250));
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: var(--color-ink, oklch(0.18 0.02 250));
+  --primary: oklch(0.55 0.14 165);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0.01 250);
+  --secondary-foreground: var(--color-ink, oklch(0.18 0.02 250));
+  --muted: oklch(0.94 0.01 90);
+  --muted-foreground: oklch(0.45 0.02 250);
+  --accent: oklch(0.96 0.01 250);
+  --accent-foreground: var(--color-ink, oklch(0.18 0.02 250));
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
+  --border: oklch(0.92 0.01 90);
+  --input: oklch(0.92 0.01 90);
+  --ring: oklch(0.55 0.14 165);
+  --chart-1: oklch(0.55 0.14 165);
+  --chart-2: oklch(0.62 0.18 25);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 1rem;
+  --sidebar: var(--color-ink, oklch(0.18 0.02 250));
+  --sidebar-foreground: var(--color-cream, oklch(0.97 0.01 90));
+  --sidebar-primary: oklch(0.55 0.14 165);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.25 0.02 250);
+  --sidebar-accent-foreground: var(--color-cream, oklch(0.97 0.01 90));
+  --sidebar-border: oklch(0.25 0.02 250);
+  --sidebar-ring: oklch(0.55 0.14 165);
 }
 
 .dark {
@@ -184,3 +199,55 @@ body {
     @apply font-sans;
   }
 }
+
+/* ── AppShell extra color tokens ── */
+:root {
+  --color-ink: oklch(0.18 0.02 250);
+  --color-coral: oklch(0.62 0.18 25);
+  --color-cream: oklch(0.97 0.01 90);
+  --color-success: oklch(0.55 0.16 145);
+  --color-warning: oklch(0.75 0.15 75);
+  --color-warning-foreground: oklch(0.35 0.12 75);
+  --color-success-foreground: oklch(0.22 0.10 145);
+  --font-display: 'Inter', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+}
+
+@theme inline {
+  --color-ink: var(--color-ink);
+  --color-coral: var(--color-coral);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-warning-foreground: var(--color-warning-foreground);
+  --color-success-foreground: var(--color-success-foreground);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+}
+
+/* ── Reusable card surface ── */
+.surface-card {
+  @apply rounded-2xl border border-border bg-card shadow-sm;
+}
+
+/* ── Hero gradient overlay ── */
+.gradient-hero {
+  background: linear-gradient(135deg, oklch(0.92 0.04 165) 0%, var(--color-cream) 100%);
+}
+
+/* ── Scrollbar hidden utility ── */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Custom scrollbar for sidebar ── */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.8 0 0 / 20%) transparent;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: oklch(0.8 0 0 / 20%); border-radius: 4px; }
