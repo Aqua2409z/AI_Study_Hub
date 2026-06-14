@@ -1,6 +1,8 @@
+"use client";
+
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, Suspense, lazy, useState } from "react";
 import gsap from "gsap";
 import {
   BookMarked,
@@ -23,7 +25,9 @@ import {
   Cell,
 } from "recharts";
 import { notebooks, notifications, leaderboard, decks } from "@/lib/mock-data";
-import mascot from "@/assets/mascot.png";
+
+// 🎯 Khởi tạo tải chậm (Lazy loading) cho mô hình 3D để tối ưu hóa tốc độ render trang đầu tiên
+const Spline = lazy(() => import("@splinetool/react-spline"));
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -79,47 +83,65 @@ function CountUp({ value }: { value: string | number }) {
 }
 
 function Dashboard() {
+  // Trạng thái kiểm soát khi thực thể 3D Spline được tải xong hoàn toàn
+  const [isSplineReady, setIsSplineReady] = useState(false);
+
   return (
     <div className="space-y-6">
-      {/* Hero */}
+      {/* ── HERO BANNER CHÀO MỪNG ── */}
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="surface-card gradient-hero p-6 lg:p-8 flex flex-col lg:flex-row gap-6 items-center"
+        className="surface-card gradient-hero p-6 lg:p-8 flex flex-col lg:flex-row gap-6 items-center overflow-hidden relative"
       >
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 z-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
             <Flame size={12} /> Chuỗi học 7 ngày liên tiếp
           </div>
+          {/* 🎯 Đã loại bỏ hoàn toàn biểu tượng ngôi sao lấp lánh ở tiêu đề chính */}
           <h1 className="mt-3 text-3xl lg:text-4xl font-bold">
-            Chào Khoa, hôm nay học gì nhỉ? <span className="text-primary">✨</span>
+            Chào Khoa, hôm nay học gì nhỉ? <span className="text-primary"></span>
           </h1>
           <p className="mt-2 text-muted-foreground max-w-xl">
-            Bạn còn <strong className="text-foreground">3 quiz</strong> chưa hoàn thành và{" "}
-            <strong className="text-foreground">12 flashcard</strong> cần ôn lại trong tuần này.
+            Bạn còn <strong className="text-foreground font-semibold">3 quiz</strong> chưa hoàn thành và{" "}
+            <strong className="text-foreground font-semibold">12 flashcard</strong> cần ôn lại trong tuần này.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
               to="/chat"
-              className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
+              className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all shadow-sm shadow-primary/10"
             >
               <Bot size={16} /> Hỏi AI ngay
             </Link>
             <Link
               to="/notebooks"
-              className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl bg-card border border-border text-sm font-medium hover:bg-muted"
+              className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl bg-card border border-border text-sm font-medium hover:bg-muted transition-colors"
             >
               Mở Notebook <ArrowRight size={16} />
             </Link>
           </div>
         </div>
-        <motion.img
-          src={mascot}
-          alt="Mascot"
-          className="w-40 lg:w-52 select-none pointer-events-none drop-shadow-xl"
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-        />
+
+        {/* ── 🤖 KHỐI HIỂN THỊ ROBOT 3D CHUYỂN ĐỘNG TỰ ĐỘNG ── */}
+        <div className="w-44 h-44 lg:w-52 lg:h-52 relative select-none pointer-events-none flex-shrink-0 z-0">
+          {/* Vòng quay Loading mảnh xuất hiện trong lúc chờ nạp file .splinecode */}
+          {!isSplineReady && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin opacity-40" />
+            </div>
+          )}
+          
+          <Suspense fallback={null}>
+            <Spline
+              // Trỏ trực tiếp vào file robot trong thư mục public/ của ông
+              scene="/robot-companion.splinecode"
+              onLoad={() => setIsSplineReady(true)}
+              className={`w-full h-full scale-110 origin-center transition-all duration-700 ${
+                isSplineReady ? "opacity-100 scale-125" : "opacity-0 scale-100"
+              }`}
+            />
+          </Suspense>
+        </div>
       </motion.section>
 
       {/* Stat tiles */}
@@ -272,6 +294,7 @@ function Dashboard() {
         </div>
       </section>
 
+      {/* Quiz + Flashcards */}
       <section className="grid lg:grid-cols-2 gap-4">
         <div className="surface-card p-5">
           <div className="flex items-center justify-between mb-4">

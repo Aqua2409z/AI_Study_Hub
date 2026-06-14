@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Send, Sparkles, FileText, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import mascot from "../assets/mascot.png";
+import mascot from "../assets/robot.png";
 
 type Msg = { id: string; role: "user" | "ai"; text: string; sources?: string[] };
 
@@ -17,7 +17,7 @@ export default function ChatPage() {
     {
       id: "0",
       role: "ai",
-      text: "Xin chào Khoa 👋 Mình là trợ lý AI của Stitch. Hỏi mình bất cứ điều gì về tài liệu trong notebook của bạn nhé!",
+      text: "Xin chào Khoa. Mình là trợ lý AI của Stitch. Hỏi mình bất cứ điều gì về tài liệu trong notebook của bạn nhé!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -72,13 +72,13 @@ export default function ChatPage() {
               animate={{ opacity: 1, y: 0 }}
               className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}
             >
-              <div
+              {/* <div
                 className={`size-9 shrink-0 rounded-full grid place-items-center ${
                   m.role === "user" ? "bg-ink text-cream" : "bg-primary/10"
                 }`}
-              >
-                {m.role === "user" ? <User size={16} /> : <img src={mascot} alt="" className="size-7" />}
-              </div>
+              > */}
+                {/* {m.role === "user" ? <User size={16} /> : <img src={mascot} alt="" className="size-9" />} */}
+              {/* </div> */}
               <div className={`max-w-[80%] ${m.role === "user" ? "items-end" : "items-start"} flex flex-col gap-2`}>
                 {m.role === "user" ? (
                   <div className="px-4 py-3 rounded-2xl bg-primary text-primary-foreground text-sm whitespace-pre-wrap">
@@ -106,9 +106,9 @@ export default function ChatPage() {
 
         {thinking && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3 items-center">
-            <div className="size-9 rounded-full bg-primary/10 grid place-items-center">
+            {/* <div className="size-9 rounded-full bg-primary/10 grid place-items-center">
               <img src={mascot} alt="" className="size-7" />
-            </div>
+            </div> */}
             <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
               <span>AI đang suy nghĩ</span>
               <span className="flex gap-0.5">

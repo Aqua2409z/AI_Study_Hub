@@ -1,5 +1,8 @@
+"use client";
+
+// import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, Suspense, lazy } from "react";
 import gsap from "gsap";
 import {
   BookMarked,
@@ -22,7 +25,9 @@ import {
   Cell,
 } from "recharts";
 import { notebooks, notifications, leaderboard, decks } from "../lib/mock-data";
-import mascot from "../assets/mascot.png";
+
+// 🎯 Khởi tạo tải chậm (Lazy loading) cho mô hình 3D để tối ưu tốc độ render trang
+const Spline = lazy(() => import("@splinetool/react-spline"));
 
 interface DashboardPageProps {
   onNavigate: (tab: number) => void;
@@ -72,49 +77,68 @@ function CountUp({ value }: { value: string | number }) {
 }
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
+  // Trạng thái kiểm soát khi thực thể 3D Spline được tải xong cấu trúc từ public
+  const [isSplineReady, setIsSplineReady] = useState(false);
+
   return (
     <div className="space-y-6">
       {/* Hero */}
+      {/* ── HERO BANNER CHÀO MỪNG ── */}
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="surface-card gradient-hero p-6 lg:p-8 flex flex-col lg:flex-row gap-6 items-center"
+
+        className="surface-card gradient-hero p-6 lg:p-8 flex flex-col md:flex-row gap-6 items-center overflow-hidden relative min-h-[240px]"
       >
-        <div className="flex-1 min-w-0">
+        {/* ── KHỐI CHỮ & NÚT BẤM (NỔI LÊN TẦNG TRÊN Z-10) ── */}
+        {/* md:pr-[160px] giúp tạo một khoảng trống an toàn bên phải để chữ không bao giờ chạm vào người con robot */}
+        <div className="flex-1 min-w-0 z-10 relative pointer-events-auto md:pr-[160px] text-left">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
             <Flame size={12} /> Chuỗi học 7 ngày liên tiếp
           </div>
           <h1 className="mt-3 text-3xl lg:text-4xl font-bold">
-            Chào Khoa, hôm nay học gì nhỉ? <span className="text-primary">✨</span>
+            Chào Khoa, hôm nay học gì nhỉ? <span className="text-primary"></span>
           </h1>
           <p className="mt-2 text-muted-foreground max-w-xl">
-            Bạn còn <strong className="text-foreground">3 quiz</strong> chưa hoàn thành và{" "}
-            <strong className="text-foreground">12 flashcard</strong> cần ôn lại trong tuần này.
+            Bạn còn <strong className="text-foreground font-semibold">3 quiz</strong> chưa hoàn thành và{" "}
+            <strong className="text-foreground font-semibold">12 flashcard</strong> cần ôn lại trong tuần này.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <button
               onClick={() => onNavigate(3)}
-              className="inline-flex items-center gap-1.5 px-5 h-10 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-5 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 shadow-sm transition-all"
             >
               <Bot size={16} /> Hỏi AI ngay
             </button>
             <button
               onClick={() => onNavigate(1)}
-              className="inline-flex items-center gap-1.5 px-5 h-10 rounded-full bg-card border border-border text-sm font-medium hover:bg-muted shadow-sm"
+              className="inline-flex items-center gap-1.5 px-5 h-10 rounded-full bg-card border border-border text-sm font-medium hover:bg-muted shadow-sm transition-colors"
             >
               Mở Notebook <ArrowRight size={16} />
             </button>
           </div>
         </div>
-        <motion.img
-          src={mascot}
-          alt="Mascot"
-          className="w-40 lg:w-52 select-none pointer-events-none drop-shadow-xl"
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </motion.section>
 
+        <div className="absolute inset-y-0 right-0 w-full md:w-[1200px] h-full z-0 pointer-events-auto select-none overflow-hidden">
+          {!isSplineReady && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin opacity-40" />
+            </div>
+          )}
+
+          <Suspense fallback={null}>
+            <Spline
+              scene="/robot-companion.splinecode"
+              onLoad={(splineApp) => {
+                setIsSplineReady(true);
+
+                // 🎯 ĐÂY NÈ: Lệnh can thiệp biến số từ code React vào lõi dự án Spline
+                splineApp.setVariable("RobotSpeed", 9.5);
+              }}
+            />
+          </Suspense>
+        </div>
+      </motion.section>
       {/* Stat tiles */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, i) => {
@@ -186,9 +210,8 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             {leaderboard.map((u) => (
               <li key={u.rank} className="flex items-center gap-3">
                 <div
-                  className={`size-7 rounded-full grid place-items-center text-xs font-bold ${
-                    u.rank === 1 ? "bg-coral text-white" : u.rank === 2 ? "bg-accent" : "bg-muted"
-                  }`}
+                  className={`size-7 rounded-full grid place-items-center text-xs font-bold ${u.rank === 1 ? "bg-coral text-white" : u.rank === 2 ? "bg-accent" : "bg-muted"
+                    }`}
                 >
                   {u.rank}
                 </div>
@@ -261,6 +284,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         </div>
       </section>
 
+      {/* Quiz + Flashcards */}
       <section className="grid lg:grid-cols-2 gap-4">
         <div className="surface-card p-5">
           <div className="flex items-center justify-between mb-4">
@@ -280,7 +304,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 </div>
                 <button
                   onClick={() => onNavigate(4)}
-                  className="px-3 h-8 inline-flex items-center rounded-lg bg-primary text-primary-foreground text-xs font-medium"
+                  className="px-3 h-8 inline-flex items-center rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
                 >
                   Làm bài
                 </button>
@@ -309,7 +333,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 </div>
                 <button
                   onClick={() => onNavigate(5)}
-                  className="px-3 h-8 inline-flex items-center rounded-lg bg-coral text-white text-xs font-medium"
+                  className="px-3 h-8 inline-flex items-center rounded-lg bg-coral text-white text-xs font-medium hover:opacity-90 transition-opacity"
                 >
                   Học
                 </button>

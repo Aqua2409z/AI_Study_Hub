@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+"use client";
+
+import { useState, useEffect, useRef, Suspense } from "react";
 import { Mail, Twitter, Github, ChevronRight, Volume2, VolumeX, Play, Pause, Sparkles, GraduationCap, Compass, Terminal, ArrowRightCircle } from "lucide-react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -26,6 +28,7 @@ const NAV_ITEMS = [
   { name: "CREATORS", id: "creators" },
   { name: "OUR JOURNEY", id: "our-journey" },
 ];
+
 const TIMELINE_DATA = [
   {
     date: "13 May '26",
@@ -59,23 +62,18 @@ const TIMELINE_DATA = [
   }
 ];
 
-const REVEAL_TEXT =
-  "The goal of AI Study Hub is to boost the joy of learning and enhance knowledge skills for students at FPT University — while gaining an intelligent overview of academic progress. Let's make studying a fun adventure!";
-
+const REVEAL_TEXT = "The goal of AI Study Hub is to boost the joy of learning and enhance knowledge skills for students at FPT University — while gaining an intelligent overview of academic progress. Let's make studying a fun adventure!";
 const ACCENT_WORDS = new Set(["AI", "Study", "Hub", "FPT", "University", "intelligent"]);
 
-// ─── SOCIAL BUTTON ─────────────────────────────────────────────────────────────
 function SocialBtn({ Icon }: { Icon: typeof Mail }) {
   return (
-    <button className="liquid-glass rounded-[1rem] w-14 h-14 flex items-center justify-center text-cream hover:bg-white/10 hover:text-neon transition-all duration-300">
+    <button className="liquid-glass rounded-[1rem] w-14 h-14 flex items-center justify-center text-cream hover:bg-white/10 hover:text-neon transition-all duration-300 cursor-pointer">
       <Icon size={20} />
     </button>
   );
 }
 
-// ─── TOP MARQUEE BANNER (XỬ LÝ TOÀN BỘ CSS TRỰC TIẾP QUA JSX & ICON) ────────────
 function TopMarqueeBanner() {
-  // Mảng bóc tách text kết hợp icon từ Lucide thay cho dấu chấm tròn đại trà
   const marqueeItems = [
     { text: "WELCOME TO MIND SPACE — NEXT-GEN KNOWLEDGE PLATFORM", icon: <Sparkles size={13} className="text-space/80" /> },
     { text: "AN ALL-NEW STUDY EXPERIENCE IS WAITING FOR YOU", icon: <GraduationCap size={13} className="text-space/80" /> },
@@ -86,14 +84,10 @@ function TopMarqueeBanner() {
     { text: "ENTER THE HUB NOW!", icon: <ArrowRightCircle size={13} className="text-space/80" /> },
   ];
 
-  // Nhân bản mảng để tạo vòng lặp vô tận không đứt đoạn
   const doubleItems = [...marqueeItems, ...marqueeItems, ...marqueeItems, ...marqueeItems];
 
   return (
     <div className="w-full bg-neon text-space py-3.5 overflow-hidden border-b border-white/10 z-50 relative select-none flex items-center">
-      {/* Sử dụng Inline Style cho animation và font để triệt tiêu hoàn toàn thẻ <style> cũ.
-        Animation 'marquee' được tính toán chuẩn -50% dịch chuyển tịnh tiến.
-      */}
       <div
         className="flex whitespace-nowrap gap-10 pr-10 items-center uppercase text-[11px] tracking-[0.15em]"
         style={{
@@ -112,8 +106,6 @@ function TopMarqueeBanner() {
           </div>
         ))}
       </div>
-
-      {/* Inject Keyframe trực tiếp qua inline style để tối ưu, không cần file config bên ngoài */}
       <style>{`
         @keyframes marquee {
           0% { transform: translateX(0%); }
@@ -124,24 +116,19 @@ function TopMarqueeBanner() {
   );
 }
 
-// ─── FOOTER ───────────────────────────────────────────────────────
 function Footer() {
   return (
     <footer className="relative bg-[#020514] overflow-hidden select-none">
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage:
-            "linear-gradient(rgba(0,255,204,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,204,1) 1px, transparent 1px)",
+          backgroundImage: "linear-gradient(rgba(0,255,204,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,204,1) 1px, transparent 1px)",
           backgroundSize: "80px 80px",
         }}
       />
       <div className="relative z-10 max-w-[1200px] mx-auto px-5 sm:px-8 lg:px-14 pt-24 pb-16 flex flex-col items-center gap-12 text-center">
         <h2 className="font-grotesk font-bold text-[28px] sm:text-[36px] lg:text-[44px] text-white leading-[1.2] max-w-[680px]">
-          AI Study Hub is set to launch in{" "}
-          <span className="text-neon">Fall 2026.</span>
-          <br />
-          Join the waitlist today.
+          AI Study Hub is set to launch in <span className="text-neon">Fall 2026.</span><br />Join the waitlist today.
         </h2>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full max-w-[520px]">
@@ -150,7 +137,7 @@ function Footer() {
             placeholder="Your email address....."
             className="flex-1 bg-white/5 border border-white/15 rounded-[12px] px-5 py-3.5 text-cream font-mono text-[13px] placeholder:text-cream/30 focus:outline-none focus:border-neon/50 transition-colors"
           />
-          <button className="group relative px-7 py-3.5 bg-neon text-space font-grotesk font-bold uppercase tracking-[0.12em] text-[12px] rounded-[12px] overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,204,0.35)] hover:scale-[1.02] whitespace-nowrap">
+          <button className="group relative px-7 py-3.5 bg-neon text-space font-grotesk font-bold uppercase tracking-[0.12em] text-[12px] rounded-[12px] overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,255,204,0.35)] hover:scale-[1.02] whitespace-nowrap cursor-pointer">
             Join the waitlist
           </button>
         </div>
@@ -160,15 +147,14 @@ function Footer() {
             href="mailto:swpteam4@fpt.edu.vn"
             className="flex items-center gap-2 text-cream/50 hover:text-neon transition-colors font-mono text-[12px] uppercase tracking-wider"
           >
-            <Mail size={14} />
-            swpteam4@fpt.edu.vn
+            <Mail size={14} /> swpteam4@fpt.edu.vn
           </a>
           <span className="w-[1px] h-4 bg-white/15" />
           <div className="flex items-center gap-3">
             {[Twitter, Github, Mail].map((Icon, i) => (
               <button
                 key={i}
-                className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-cream/50 hover:text-neon hover:border-neon/40 transition-all duration-300"
+                className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-cream/50 hover:text-neon hover:border-neon/40 transition-all duration-300 cursor-pointer"
               >
                 <Icon size={15} />
               </button>
@@ -178,18 +164,13 @@ function Footer() {
 
         <div className="flex items-center gap-6 flex-wrap justify-center">
           {["Privacy Policy", "Cookie Settings", "API Docs", "Github Repo"].map((link, i) => (
-            <a
-              key={i}
-              href="#"
-              className="font-mono text-[11px] uppercase tracking-widest text-cream/30 hover:text-cream/70 transition-colors"
-            >
+            <a key={i} href="#" className="font-mono text-[11px] uppercase tracking-widest text-cream/30 hover:text-cream/70 transition-colors">
               {link}
             </a>
           ))}
         </div>
 
         <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
         <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-3 text-[10px] font-mono uppercase tracking-widest text-cream/20">
           <span>© 2026 Mind Space. All rights reserved.</span>
           <span>Engineered by SWP_TEAM_4 · FPT University</span>
@@ -216,7 +197,6 @@ function Footer() {
   );
 }
 
-// ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => void }) {
   const [activeSection, setActiveSection] = useState("homepage");
   const [isMuted, setIsMuted] = useState(true);
@@ -228,7 +208,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
 
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
 
-  // ── GSAP + Lenis setup ──────────────────────────────────────────────────────
+  // ─── 🛠️ KHỞI TẠO ĐỒNG BỘ HIỆU ỨNG GSAP + LENIS ───
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
@@ -249,6 +229,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
     gsap.ticker.lagSmoothing(0);
     ScrollTrigger.defaults({ scroller: scrollContainer });
 
+    // Trình tự động kích hoạt phát Video thông minh khi cuộn tới tầm nhìn
     const setupVideoTrigger = (selector: string) => {
       const section = document.querySelector(selector);
       const video = section?.querySelector("video");
@@ -267,6 +248,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
     setupVideoTrigger("#objectives");
     setupVideoTrigger("#our-journey");
 
+    // Gán trigger video cho các thẻ card NFT
     document.querySelectorAll(".nft-card-trigger").forEach((card) => {
       const vid = card.querySelector("video");
       if (!vid) return;
@@ -281,6 +263,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       });
     });
 
+    // Các hiệu ứng Parallax của Hero section
     gsap.to(".hero-video-parallax", {
       scrollTrigger: { trigger: "#homepage", start: "top top", end: "bottom top", scrub: true },
       yPercent: 20, ease: "none",
@@ -294,12 +277,12 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       y: -180, rotate: -5,
     });
 
-
     gsap.to(".about-video-parallax", {
       scrollTrigger: { trigger: "#objectives", start: "top bottom", end: "bottom top", scrub: true },
       yPercent: 15, ease: "none",
     });
 
+    // Phân rã chữ chạy text reveal hiệu ứng cuộn chuột
     const revealEl = document.getElementById("objectives-reveal-text");
     if (revealEl) {
       const words = REVEAL_TEXT.split(" ");
@@ -323,16 +306,13 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
         onUpdate: (self) => {
           const p = self.progress;
           const limit = Math.floor(p * plain.length);
-          plain.forEach((s, i) => {
-            s.style.color = i < limit ? "#F5F2EA" : "rgba(245,242,234,0.15)";
-          });
-          accents.forEach((s) => {
-            s.style.color = p > 0.06 ? "#00ffcc" : "rgba(0,255,204,0.18)";
-          });
+          plain.forEach((s, i) => { s.style.color = i < limit ? "#F5F2EA" : "rgba(245,242,234,0.15)" });
+          accents.forEach((s) => { s.style.color = p > 0.06 ? "#00ffcc" : "rgba(0,255,204,0.18)" });
         },
       });
     }
 
+    // ─── 🎯 HIỆU ỨNG ĐỒNG BỘ CUỘN TIMELINE ROW VÀ KHỬ LỖI KHÔNG CHẠY ───
     document.querySelectorAll(".timeline-row").forEach((row) => {
       const dateText = row.querySelector(".timeline-date-text");
       const statusLine = row.querySelector(".timeline-line");
@@ -358,14 +338,12 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       });
     });
 
+    // Kéo dạt thẻ NFT Creators
     document.querySelectorAll(".nft-card-trigger").forEach((card, i) => {
       const speed = (i % 3 + 1) * 30;
       gsap.fromTo(card,
         { y: speed * 1.5, rotateX: 10 },
-        {
-          scrollTrigger: { trigger: "#creators", start: "top bottom", end: "bottom top", scrub: 1 },
-          y: -speed, rotateX: -5, ease: "power1.out",
-        }
+        { scrollTrigger: { trigger: "#creators", start: "top bottom", end: "bottom top", scrub: 1 }, y: -speed, rotateX: -5, ease: "power1.out" }
       );
     });
 
@@ -374,13 +352,17 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       yPercent: 20, ease: "none",
     });
 
+    // ⚡ QUAN TRỌNG: Trì hoãn 200ms để đợi DOM ổn định rồi ép Refresh đo đạc lại tọa độ, khử hoàn toàn lỗi đơ cuộn
+    const refreshTimer = setTimeout(() => { ScrollTrigger.refresh() }, 200);
+
     return () => {
+      clearTimeout(refreshTimer);
       lenis.destroy();
       ScrollTrigger.getAll().forEach((t) => t.kill());
     };
   }, []);
 
-  // ── Active section tracker ──────────────────────────────────────────────────
+  // Theo dõi vị trí đang đứng để làm sáng tab menu tương ứng
   useEffect(() => {
     const sections = NAV_ITEMS.map((item) => document.getElementById(item.id));
     const observer = new IntersectionObserver(
@@ -391,7 +373,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
     return () => sections.forEach((s) => s && observer.unobserve(s));
   }, []);
 
-  // ── Video controls ──────────────────────────────────────────────────────────
   const togglePlay = () => {
     videoRefs.current.forEach((v) => {
       if (!v) return;
@@ -430,21 +411,21 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       <div className="fixed bottom-6 right-6 z-50 flex gap-2 bg-[#020a21]/80 backdrop-blur-md border border-white/10 p-1.5 rounded-full shadow-2xl">
         <button
           onClick={togglePlay}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isPlaying ? "text-cream hover:bg-white/15" : "bg-neon text-space"}`}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${isPlaying ? "text-cream hover:bg-white/15" : "bg-neon text-space"}`}
           title={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying ? <Pause size={15} /> : <Play size={15} />}
         </button>
         <button
           onClick={toggleMute}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${!isMuted ? "bg-purple-500 text-white" : "text-cream/60 hover:bg-white/15"}`}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer ${!isMuted ? "bg-purple-500 text-white" : "text-cream/60 hover:bg-white/15"}`}
           title={isMuted ? "Unmute" : "Mute"}
         >
           {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
         </button>
       </div>
 
-      {/* ── SECTION 1 · HERO ────────────────────────────────────────────────── */}
+      {/* ── SECTION 1 · HERO ── */}
       <section id="homepage" className="relative w-full min-h-screen overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <video
@@ -491,9 +472,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
           <div className="flex-1 flex items-end pb-20 lg:pb-32 hero-title-trigger will-change-transform">
             <div className="relative lg:ml-32 max-w-[780px]">
               <h1 className="font-grotesk uppercase text-[40px] sm:text-[60px] md:text-[75px] lg:text-[90px] leading-[1.05] sm:leading-[1] tracking-tighter">
-                Beyond earth
-                <br />
-                and ( its ) familiar boundaries
+                Beyond earth and ( its ) familiar boundaries
               </h1>
               <span className="hero-subtitle-parallax font-condiment text-neon text-[24px] sm:text-[32px] md:text-[40px] lg:text-[48px] absolute -right-2 lg:right-8 top-2 -rotate-1 opacity-90 mix-blend-exclusion will-change-transform normal-case">
                 Academic Odyssey
@@ -502,7 +481,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
               <div className="mt-10 flex justify-center">
                 <button
                   onClick={onLoginClick}
-                  className="group relative px-10 py-4 bg-transparent border border-neon text-neon font-grotesk uppercase tracking-[0.2em] text-xs overflow-hidden transition-all duration-300 hover:text-black hover:shadow-[0_0_25px_rgba(0,255,140,0.4)]"
+                  className="group relative px-10 py-4 bg-transparent border border-neon text-neon font-grotesk uppercase tracking-[0.2em] text-xs overflow-hidden transition-all duration-300 hover:text-black hover:shadow-[0_0_25px_rgba(0,255,140,0.4)] cursor-pointer"
                 >
                   <span className="relative z-10 flex items-center gap-2 font-bold">
                     Get in touch
@@ -522,102 +501,50 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
         </div>
       </section>
 
-      {/* ── SECTION 2 · OBJECTIVES ─────────────────────────────────────────── */}
-      {/* ── SECTION 2 · OBJECTIVES ─────────────────────────────────────────── */}
+      {/* ── SECTION 2 · OBJECTIVES ── */}
       <section id="objectives" className="relative w-full min-h-screen overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <video
             ref={registerVideoRef}
-            preload="metadata"
-            loop
-            muted={isMuted}
-            playsInline
+            preload="metadata" loop muted={isMuted} playsInline
             className="about-video-parallax absolute inset-0 w-full h-[120%] object-cover brightness-[0.7] will-change-transform"
             src={ABOUT_VIDEO}
           />
         </div>
 
         <div className="relative z-10 max-w-[1831px] mx-auto px-5 sm:px-8 lg:px-14 py-16 lg:py-24 min-h-screen flex flex-col justify-between gap-16">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', width: '100%' }}>
-
-            {/* CONTAINER CHÍNH CỦA TIÊU ĐỀ VÀ MÔ TẢ */}
-            <div className="flex flex-col lg:flex-row justify-between items-start" style={{ gap: '40px' }}>
-
-              {/* KHỐI TIÊU ĐỀ BÊN TRÁI (Dùng font Syne phá cách) */}
-              <div style={{ position: 'relative', userSelect: 'none' }}>
-                <h2 style={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  fontSize: 'clamp(36px, 5vw, 64px)',
-                  lineHeight: 0.95,
-                  letterSpacing: '-0.03em',
-                  color: '#ffffff',
-                  margin: 0
-                }}>
+          <div className="flex flex-col gap-10 w-full">
+            <div className="flex flex-col lg:flex-row justify-between items-start gap-10">
+              <div className="relative select-none">
+                <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, textTransform: 'uppercase', fontSize: 'clamp(36px, 5vw, 64px)', lineHeight: 0.95, letterSpacing: '-0.03em', color: '#ffffff', margin: 0 }}>
                   Hello!<br />I'm orbis
                 </h2>
-
-                {/* Chữ ký đè lên tiêu đề chính */}
-                <span className="font-condiment text-neon" style={{
-                  fontSize: 'clamp(36px, 5vw, 68px)',
-                  position: 'absolute',
-                  bottom: '-16px',
-                  right: 0,
-                  transform: 'rotate(-3deg)',
-                  mixBlendMode: 'exclusion',
-                  pointerEvents: 'none'
-                }}>
+                <span className="font-condiment text-neon" style={{ fontSize: 'clamp(36px, 5vw, 68px)', position: 'absolute', bottom: '-16px', right: 0, transform: 'rotate(-3deg)', mixBlendMode: 'exclusion', pointerEvents: 'none' }}>
                   Orbis
                 </span>
               </div>
 
-              {/* KHỐI MÔ TẢ BÊN PHẢI (Nội dung chuẩn AI Study Hub tại FPTU + Font JetBrains Mono) */}
-              <p className="text-cream/80"
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 'clamp(11px, 2vw, 13px)',
-                  textTransform: 'uppercase',
-                  maxWidth: '340px',
-                  lineHeight: 1.6,
-                  letterSpacing: '0.08em',
-                  borderLeft: '1px solid #00f2fe',
-                  paddingLeft: '20px',
-                  paddingTop: '4px',
-                  margin: 0,
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.color = '#ffffff';
-                  e.currentTarget.style.borderLeftColor = '#00ffff';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.color = 'rgba(245, 245, 220, 0.8)';
-                  e.currentTarget.style.borderLeftColor = '#00f2fe';
-                }}>
+              <p className="text-cream/80" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 'clamp(11px, 2vw, 13px)', textTransform: 'uppercase', maxWidth: '340px', lineHeight: 1.6, letterSpacing: '0.08em', borderLeft: '1px solid #00f2fe', paddingLeft: '20px', paddingTop: '4px', margin: 0, transition: 'all 0.3s ease' }} onMouseOver={(e) => { e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.borderLeftColor = '#00ffff'; }} onMouseOut={(e) => { e.currentTarget.style.color = 'rgba(245, 245, 220, 0.8)'; e.currentTarget.style.borderLeftColor = '#00f2fe'; }}>
                 The goal of AI Study Hub is to boost the joy of learning and enhance knowledge skills for students at FPT University. Let's make studying a fun adventure!
               </p>
-
             </div>
           </div>
 
-          {/* PHẦN HIỆU ỨNG TEXT REVEAL CHẠY CHỮ KHI CUỘN CHUỘT */}
-          <p
-            id="objectives-reveal-text"
-            className="text-center font-grotesk font-bold text-[28px] sm:text-[36px] lg:text-[48px] leading-[1.25] max-w-[900px] mx-auto"
-          />
+          <p id="objectives-reveal-text" className="text-center font-grotesk font-bold text-[28px] sm:text-[36px] lg:text-[48px] leading-[1.25] max-w-[900px] mx-auto" />
         </div>
       </section>
-      {/* SECTION: SCROLL TIMELINE */}
-      <TimeLineSection TIMELINE_DATA={TIMELINE_DATA} />
 
-      {/* ── SECTION 4 · CREATORS GRID ───────────────────────────────────────── */}
+      {/* ── 🎯 SECTION 3 · SCROLL TIMELINE (ĐÃ BỌC NEO HOÀN CHỈNH) ── */}
+      <div id="timeline" className="relative w-full">
+        <TimeLineSection TIMELINE_DATA={TIMELINE_DATA} />
+      </div>
+
+      {/* ── SECTION 4 · CREATORS GRID ── */}
       <section id="creators" className="bg-space py-20 lg:py-28 overflow-hidden">
         <div className="max-w-[1831px] mx-auto px-5 sm:px-8 lg:px-14">
           <div className="flex flex-col lg:flex-row justify-between items-start gap-10 mb-12">
             <h2 className="font-grotesk uppercase text-[32px] sm:text-[44px] lg:text-[60px] leading-[1]">
-              Collection of
-              <br />
+              Collection of <br />
               <span className="ml-12 md:ml-24 lg:ml-32 inline-block">
                 <span className="font-condiment text-neon normal-case">Space</span> objects
               </span>
@@ -636,10 +563,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-10">
             {NFTS.map((n, index) => (
-              <div
-                key={`nft-${index}`}
-                className="nft-card-trigger will-change-transform liquid-glass rounded-[32px] p-[18px] hover:bg-white/10 transition group"
-              >
+              <div key={`nft-${index}`} className="nft-card-trigger will-change-transform liquid-glass rounded-[32px] p-[18px] hover:bg-white/10 transition group">
                 <div className="relative w-full pb-[100%] rounded-[24px] overflow-hidden">
                   <video
                     ref={registerVideoRef}
@@ -652,7 +576,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
                       <span className="text-[11px] text-cream/70 font-mono uppercase">Rarity Score:</span>
                       <span className="text-[16px] font-grotesk text-neon">{n.score}</span>
                     </div>
-                    <button className="w-12 h-12 rounded-full bg-gradient-to-br from-[#b724ff] to-[#7c3aed] shadow-lg shadow-purple-500/50 group-hover:scale-110 transition flex items-center justify-center text-white">
+                    <button className="w-12 h-12 rounded-full bg-gradient-to-br from-[#b724ff] to-[#7c3aed] shadow-lg shadow-purple-500/50 group-hover:scale-110 transition flex items-center justify-center text-white cursor-pointer">
                       <ChevronRight size={22} />
                     </button>
                   </div>
@@ -663,7 +587,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
         </div>
       </section>
 
-      {/* ── SECTION 5 · CTA ─────────────────────────────────────────────────── */}
+      {/* ── SECTION 5 · CTA ── */}
       <section id="our-journey" className="relative w-full min-h-screen flex items-center overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <video
@@ -680,10 +604,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
                 Go beyond
               </span>
               <h2 className="font-grotesk uppercase text-[20px] sm:text-[38px] lg:text-[60px] leading-[1.05] text-[#F5F2EA] tracking-tighter">
-                <span className="block mb-4 lg:mb-8">JOIN US.</span>
-                REVEAL WHAT'S HIDDEN.
-                <br />DEFINE WHAT'S NEXT.
-                <br />FOLLOW THE SIGNAL.
+                <span className="block mb-4 lg:mb-8">JOIN US.</span>REVEAL WHAT'S HIDDEN.<br />DEFINE WHAT'S NEXT.<br />FOLLOW THE SIGNAL.
               </h2>
             </div>
           </div>
@@ -691,10 +612,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
           <div className="flex justify-start pb-[5%]">
             <div className="liquid-glass rounded-[0.75rem] lg:rounded-[1.25rem] flex flex-col overflow-hidden border border-white/5">
               {[Mail, Twitter, Github].map((Icon, i) => (
-                <button
-                  key={i}
-                  className={`flex items-center justify-center text-cream hover:bg-white/10 hover:text-neon transition w-[16vw] sm:w-[10rem] lg:w-[12rem] h-[14vw] sm:h-[3.5rem] lg:h-[4.5rem] ${i < 2 ? "border-b border-white/10" : ""}`}
-                >
+                <button key={i} className={`flex items-center justify-center text-cream hover:bg-white/10 hover:text-neon transition w-[16vw] sm:w-[10rem] lg:w-[12rem] h-[14vw] sm:h-[3.5rem] lg:h-[4.5rem] cursor-pointer ${i < 2 ? "border-b border-white/10" : ""}`}>
                   <Icon size={20} />
                 </button>
               ))}
