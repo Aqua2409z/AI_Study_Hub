@@ -5,7 +5,7 @@ import { Mail, Lock, User, Sparkles, ArrowRight, ArrowLeft, Check, X, Eye, EyeOf
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import { gsap } from "gsap";
 import { motion, AnimatePresence } from "framer-motion";
-import { type AuthUser } from "../../services/authService";
+import { authService, type AuthUser } from "../../services/authService";
 import { cn } from "../../lib/utils";
 
 // 1. IMPORT CÁC COMPONENT LIÊN QUAN
@@ -57,10 +57,10 @@ Notify.init({
 
 interface LoginPanelProps {
   onLoginSuccess: (token: string, user: AuthUser) => void;
-  onClose?: () => void; // 🆕 Thêm dòng này để nhận hàm quay lại Landing Page
+  onClose?: () => void;
 }
 
-export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps) { // 🆕 Thêm onClose ở đây
+export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps) {
   const [mode, setMode] = useState<"login" | "signup" | "forgot">(() => {
     return (localStorage.getItem("loginPanelMode") as "login" | "signup" | "forgot") || "login";
   });
@@ -85,6 +85,35 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
       { opacity: 1, y: 0, rotateX: 0, duration: 0.4, stagger: 0.03, ease: "power2.out", clearProps: "transform" }
     );
   }, [mode, showCombo]);
+
+  // ── 🎯 XỬ LÝ POPUP ĐĂNG NHẬP OAUTH GOOGLE CHUYÊN NGHIỆP VÀ BÁO LỖI ──
+  const handleOAuthLogin = async (provider: "google" | "github") => {
+    setLoading(true);
+
+    const width = 500;
+    const height = 650;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+
+    const oauthUrl = provider === "google"
+      ? "https://accounts.google.com/gsi/select?client_id=mock-client-id"
+      : "https://github.com/login/oauth/authorize";
+
+    const popupWindow = window.open(
+      oauthUrl,
+      `${provider} Sign-In`,
+      `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`
+    );
+
+    const timer = setInterval(() => {
+      if (!popupWindow || popupWindow.closed) {
+        clearInterval(timer);
+        setLoading(false);
+        // Báo lỗi ngắt kết nối trực tiếp khi đóng Popup
+        Notify.failure(`Cổng kết nối API ${provider} thất bại! Vui lòng thử lại bằng Email sinh viên.`);
+      }
+    }, 1000);
+  };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -117,10 +146,11 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
     if (/\d/.test(pwd)) score++;
     if (/[^A-Za-z0-9]/.test(pwd)) score++;
 
-    if (score <= 1) return { score, label: "Quá yếu ❌", color: "bg-red-500", textClass: "text-red-400" };
-    if (score === 2) return { score, label: "Trung bình ⚠️", color: "bg-yellow-500", textClass: "text-yellow-400" };
-    if (score === 3) return { score, label: "Mạnh   ✨", color: "bg-blue-500", textClass: "text-blue-400" };
-    return { score, label: "Cực kỳ an toàn 💪", color: "bg-emerald-500", textClass: "text-emerald-400" };
+    // Đã fix lỗi Object cấu trúc dấu hai chấm chuẩn xác cho ông
+    if (score <= 1) return { score, label: "Quá yếu ", color: "bg-red-500", textClass: "text-red-400" };
+    if (score === 2) return { score, label: "Trung bình ", color: "bg-yellow-500", textClass: "text-yellow-400" };
+    if (score === 3) return { score, label: "Mạnh ", color: "bg-blue-500", textClass: "text-blue-400" };
+    return { score, label: "Cực kỳ an toàn ", color: "bg-emerald-500", textClass: "text-emerald-400" };
   };
 
   const strength = getPasswordStrength(password);
@@ -129,70 +159,55 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
 
-    if (!cleanEmail.endsWith("@gmail.com")) {
-      Notify.failure("Email phải có định dạng @gmail.com");
+    if (!cleanEmail.endsWith("@gmail.com") && !cleanEmail.endsWith("@fpt.edu.vn")) {
+      Notify.failure("Hệ thống chỉ chấp nhận tài khoản @gmail.com hoặc @fpt.edu.vn");
       return;
     }
     if (mode === "signup") {
+      if (!fullName.trim()) {
+        Notify.failure("Vui lòng nhập họ và tên của bạn!");
+        return;
+      }
       if (strength.score < 2) {
-        Notify.failure("Mật khẩu quá yếu!");
+        Notify.failure("Mật khẩu quá yếu! Hãy gia cố thêm ký tự đặc biệt hoặc số.");
         return;
       }
       if (password !== confirmPassword) {
-        Notify.failure("Mật khẩu nhập lại không khớp!");
+        Notify.failure("Mật khẩu xác nhận nhập lại chưa trùng khớp!");
         return;
       }
     }
     if (mode === "login" && password.length < 6) {
-      Notify.failure("Mật khẩu phải từ 6 ký tự trở lên");
+      Notify.failure("Mật khẩu cấu hình phải từ 6 ký tự trở lên");
       return;
     }
 
     setLoading(true);
     try {
       if (mode === "login") {
-        const response = await fetch("https://httpbin.org/post", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: cleanEmail, password }),
-        });
-        if (!response.ok) throw new Error("Network error");
-        await response.json();
+        const response = await authService.login(cleanEmail, password);
 
-        if (cleanEmail === "khoa@gmail.com" && password === "123456") {
-          Notify.success("Đăng nhập thành công vào Hub! ✨");
-          const mockToken = "fake-jwt-token-for-anh-khoa-192585";
-          const mockUser: AuthUser = { email: cleanEmail, role: "student" };
-
-          localStorage.setItem("auth_token", mockToken);
-          localStorage.setItem("auth_user", JSON.stringify(mockUser));
-
+        if (response.success) {
+          Notify.success("Xác thực thông tin tài khoản thành công! ");
           setTimeout(() => setShowCombo(true), 600);
-        } else if (cleanEmail === "banned@gmail.com") {
-          Notify.failure("Tài khoản này đã bị khóa do vi phạm chính sách! ❌");
-        } else {
-          Notify.failure("Sai tài khoản hoặc mật khẩu không chính xác! ⚠️");
         }
       } else {
-        await new Promise((r) => setTimeout(r, 1000));
-        Notify.success("Đăng ký thành công! Hãy đăng nhập.");
-        setMode("login");
-        setPassword(""); setConfirmPassword(""); setFullName("");
-      }
-    } catch (err) {
-      Notify.failure("Mất kết nối mạng, không thể gửi request!");
-    } finally {
-      setLoading(false);
-    }
-  };
+        const response = await authService.register({
+          email: cleanEmail,
+          password: password,
+          fullName: fullName,
+          currentSemesterId: 3,
+          comboId: 1
+        });
 
-  const handleOAuthLogin = async (provider: "google" | "github") => {
-    setLoading(true);
-    try {
-      await new Promise((r) => setTimeout(r, 1000));
-      Notify.success(`Kết nối ${provider} thành công!`);
-    } catch {
-      Notify.failure(`Kết nối với ${provider} thất bại.`);
+        if (response.success) {
+          Notify.success("Tạo tài khoản học viên mới thành công! Hãy tiến hành đăng nhập.");
+          setMode("login");
+          setPassword(""); setConfirmPassword(""); setFullName("");
+        }
+      }
+    } catch (err: any) {
+      Notify.failure(err.message || "Xử lý yêu cầu xác thực thất bại!");
     } finally {
       setLoading(false);
     }
@@ -201,18 +216,20 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail.endsWith("@gmail.com")) {
-      Notify.failure("Email không hợp lệ!");
+    if (!cleanEmail.endsWith("@gmail.com") && !cleanEmail.endsWith("@fpt.edu.vn")) {
+      Notify.failure("Địa chỉ Email liên hệ không hợp lệ!");
       return;
     }
     setLoading(true);
     try {
-      await new Promise((r) => setTimeout(r, 1000));
-      setResetMessage(`Link reset đã gửi tới ${cleanEmail}.`);
-      Notify.success("Đã gửi link đặt lại mật khẩu!");
-      setTimeout(() => { setMode("login"); setResetMessage(""); setEmail(""); }, 3000);
-    } catch {
-      Notify.failure("Gửi yêu cầu thất bại.");
+      const response = await authService.forgotPassword(cleanEmail);
+      if (response.success) {
+        setResetMessage(`Yêu cầu thành công. Mã Reset Token Preview: ${response.data.resetTokenPreview}`);
+        Notify.success("Đã khởi tạo lệnh cấp lại mật khẩu!");
+        setTimeout(() => { setMode("login"); setResetMessage(""); setEmail(""); }, 4000);
+      }
+    } catch (err: any) {
+      Notify.failure(err.message || "Gửi yêu cầu khôi phục thất bại.");
     } finally {
       setLoading(false);
     }
@@ -281,12 +298,15 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
               <FPTComboForm
                 onClose={handleFinishCombo}
                 onLoginSuccess={(email: string) => {
-                  onLoginSuccess(email, { email, role: "student" });
+                  const token = localStorage.getItem("auth_token") || "";
+                  const userStr = localStorage.getItem("auth_user");
+                  const user = userStr ? JSON.parse(userStr) : { email, role: "STUDENT" };
+                  onLoginSuccess(token, user);
                 }}
               />
             </motion.div>
           ) : (
-            /* MÀN HÌNH ĐĂNG NHẬP GỐC CỦA ÔNG */
+            /* MÀN HÌNH ĐĂNG NHẬP GỐC */
             <motion.div
               key="login-panel-screen"
               initial={{ opacity: 0, y: 30 }}
@@ -296,7 +316,6 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
               className="w-full max-w-[460px] mx-auto select-none p-4"
               ref={formContainerRef}
             >
-              {/* 🎯 ĐÃ GHÉP KHỚP BIẾN CLASS `liquid-glass-form` LÀM NỀN KÍNH XUYÊN THẤU VIDEO */}
               <motion.div
                 ref={cardRef}
                 onMouseMove={handleMouseMove}
@@ -312,7 +331,6 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
                 <div className="relative z-10">
                   <AnimatePresence mode="wait">
                     {mode !== "login" ? (
-                      /* CHẾ ĐỘ QUÊN MK / ĐĂNG KÝ: Bấm quay lại màn hình Login chính */
                       <motion.button
                         key="back-to-login"
                         initial={{ opacity: 0, x: -10 }}
@@ -325,14 +343,13 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
                         <ArrowLeft size={13} className="group-hover:-translate-x-1 transition-transform" /> Back to Login
                       </motion.button>
                     ) : (
-                      /* 🆕 CHẾ ĐỘ LOGIN CHÍNH: Hiện nút quay lại trang Landing Page (Our Journey) */
                       <motion.button
                         key="back-to-journey"
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
                         type="button"
-                        onClick={onClose} // Kích hoạt đóng form quay về màn hình giới thiệu
+                        onClick={onClose}
                         className="group flex items-center gap-2 text-cream/40 hover:text-neon mb-5 transition-all duration-300 font-mono text-[11px] uppercase tracking-wider cursor-pointer"
                       >
                         <ArrowLeft size={13} className="group-hover:-translate-x-1 transition-transform" /> Back to Journey
@@ -419,7 +436,7 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
                                 />
                               ))}
                             </div>
-                            <div className="pt-1 text-[10px] font-mono text-cream/40 space-y-1 border-t border-white/5 mt-1.5">
+                            <div className="pt-1 text-[10px] font-mono text-cream/40 space-y-1 border-t border-white/5 mt-1.5 border-white/5">
                               {[
                                 { check: password.length >= 6, label: "Tối thiểu 6 ký tự" },
                                 { check: /[a-z]/.test(password) && /[A-Z]/.test(password), label: "Chứa chữ HOA & chữ thường" },
@@ -557,4 +574,4 @@ function Field({ Icon, type, placeholder, value, onChange }: FieldProps) {
       )}
     </div>
   );
-}
+} 

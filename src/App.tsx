@@ -18,17 +18,18 @@ import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage      from "./pages/ProfilePage";
 import AdminPage        from "./pages/AdminPage";
 
-// Tab ID map (khớp với nav[] trong AppShell.tsx)
-// 0  Dashboard
-// 1  Notebooks
-// 2  Tài liệu
-// 3  Hỏi AI
-// 4  Quiz
-// 5  Flashcards
-// 6  Cộng đồng
-// 7  Thông báo
-// 8  Hồ sơ
-// 9  Admin
+const TAB_PATHS = [
+  "/dashboard",
+  "/notebooks",
+  "/documents",
+  "/chat",
+  "/quiz",
+  "/flashcards",
+  "/community",
+  "/notifications",
+  "/profile",
+  "/admin"
+];
 
 export default function App() {
   const [isLoggedIn,     setIsLoggedIn]     = useState<boolean>(false);
@@ -36,6 +37,45 @@ export default function App() {
   const [showLoginPanel, setShowLoginPanel] = useState<boolean>(false);
   const [userEmail,      setUserEmail]      = useState<string>("");
   const [activeTab,      setActiveTab]      = useState<number>(0);
+
+  // Sync state with URL (Routing)
+  useEffect(() => {
+    const handleLocation = () => {
+      const path = window.location.pathname;
+      if (path === "/login") {
+        setShowLoginPanel(true);
+      } else if (path === "/" || path === "") {
+        setShowLoginPanel(false);
+      } else {
+        const idx = TAB_PATHS.indexOf(path);
+        if (idx !== -1) {
+          setActiveTab(idx);
+        }
+      }
+    };
+
+    handleLocation();
+    window.addEventListener("popstate", handleLocation);
+    return () => window.removeEventListener("popstate", handleLocation);
+  }, []);
+
+  const handleTabChange = (id: number) => {
+    setActiveTab(id);
+    const path = TAB_PATHS[id] || "/dashboard";
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, "", path);
+    }
+  };
+
+  const navigateToLogin = () => {
+    setShowLoginPanel(true);
+    window.history.pushState({}, "", "/login");
+  };
+
+  const navigateToLanding = () => {
+    setShowLoginPanel(false);
+    window.history.pushState({}, "", "/");
+  };
 
   // 1. Kiểm tra trạng thái đăng nhập cũ khi F5 ứng dụng
   useEffect(() => {
@@ -65,6 +105,7 @@ export default function App() {
       localStorage.setItem("isLoggedIn", "true");
       setIsLoading(false);
       setShowLoginPanel(false);
+      window.history.pushState({}, "", "/dashboard");
     }, 2500);
   };
 
@@ -74,13 +115,14 @@ export default function App() {
     setIsLoggedIn(false);
     setUserEmail("");
     setActiveTab(0);
+    window.history.pushState({}, "", "/");
   };
 
   // Render đúng page theo activeTab
   const renderPage = () => {
     switch (activeTab) {
-      case 0:  return <DashboardPage onNavigate={setActiveTab} />;
-      case 1:  return <NotebooksPage onNavigate={setActiveTab} />;
+      case 0:  return <DashboardPage onNavigate={handleTabChange} />;
+      case 1:  return <NotebooksPage onNavigate={handleTabChange} />;
       case 2:  return <DocumentsPage />;
       case 3:  return <ChatPage />;
       case 4:  return <QuizPage />;
@@ -89,7 +131,7 @@ export default function App() {
       case 7:  return <NotificationsPage />;
       case 8:  return <ProfilePage onLogout={handleLogout} />;
       case 9:  return <AdminPage />;
-      default: return <DashboardPage onNavigate={setActiveTab} />;
+      default: return <DashboardPage onNavigate={handleTabChange} />;
     }
   };
 
@@ -99,7 +141,7 @@ export default function App() {
   // ── Main App (đã đăng nhập) ──
   if (isLoggedIn) {
     return (
-      <AppShell activeTab={activeTab} setActiveTab={setActiveTab}>
+      <AppShell activeTab={activeTab} setActiveTab={handleTabChange}>
         {renderPage()}
       </AppShell>
     );
@@ -116,17 +158,11 @@ export default function App() {
           <style>{`
             .hide-scrollbar::-webkit-scrollbar { display: none; }
           `}</style>
-          <OrbisLanding onLoginClick={() => setShowLoginPanel(true)} />
+          <OrbisLanding onLoginClick={navigateToLogin} />
         </div>
       ) : (
         <div className="w-full h-full flex items-center justify-center relative animate-fade-in">
-          <button
-            onClick={() => setShowLoginPanel(false)}
-            className="absolute top-6 left-6 text-xs uppercase tracking-widest text-neon border border-neon/30 px-4 py-2 hover:bg-neon hover:text-space transition-all duration-300 rounded-lg"
-          >
-            ← Back to journey
-          </button>
-          <LoginPanel onLoginSuccess={(token, user) => handleLoginSuccess(user.email)} />
+          <LoginPanel onLoginSuccess={(token, user) => handleLoginSuccess(user.email)} onClose={navigateToLanding} />
         </div>
       )}
     </div>

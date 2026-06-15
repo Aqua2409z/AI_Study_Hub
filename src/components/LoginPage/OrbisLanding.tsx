@@ -207,8 +207,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
   const isPlayingRef = useRef(isPlaying);
 
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
-
-  // ─── 🛠️ KHỞI TẠO ĐỒNG BỘ HIỆU ỨNG GSAP + LENIS ───
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
@@ -223,6 +221,11 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       smoothWheel: true,
     });
     lenisRef.current = lenis;
+
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname);
+      window.scrollTo(0, 0);
+    }
 
     lenis.on("scroll", ScrollTrigger.update);
     gsap.ticker.add((time) => lenis.raf(time * 1000));
@@ -248,7 +251,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
     setupVideoTrigger("#objectives");
     setupVideoTrigger("#our-journey");
 
-    // Gán trigger video cho các thẻ card NFT
     document.querySelectorAll(".nft-card-trigger").forEach((card) => {
       const vid = card.querySelector("video");
       if (!vid) return;
@@ -263,7 +265,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       });
     });
 
-    // Các hiệu ứng Parallax của Hero section
     gsap.to(".hero-video-parallax", {
       scrollTrigger: { trigger: "#homepage", start: "top top", end: "bottom top", scrub: true },
       yPercent: 20, ease: "none",
@@ -282,7 +283,6 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
       yPercent: 15, ease: "none",
     });
 
-    // Phân rã chữ chạy text reveal hiệu ứng cuộn chuột
     const revealEl = document.getElementById("objectives-reveal-text");
     if (revealEl) {
       const words = REVEAL_TEXT.split(" ");

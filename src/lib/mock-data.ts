@@ -80,7 +80,7 @@ export type Noti = {
 
 export const notifications: Noti[] = [
   { id: "1", text: "AI vừa tóm tắt xong tài liệu 'Software Project — Lecture 01'", time: "5 phút trước", unread: true, kind: "ai" },
-  { id: "2", text: "Bạn đã duy trì chuỗi học 7 ngày liên tiếp 🔥", time: "2 giờ trước", unread: true, kind: "system" },
+  { id: "2", text: "Bạn đã duy trì chuỗi học 7 ngày liên tiếp ", time: "2 giờ trước", unread: true, kind: "system" },
   { id: "3", text: "Quiz 'SWP391 Final Review' của bạn đã được duyệt lên Marketplace", time: "Hôm qua", unread: false, kind: "market" },
   { id: "4", text: "Minh Anh vừa bình luận về tài liệu 'Mock exam answers'", time: "2 ngày trước", unread: false, kind: "social" },
 ];

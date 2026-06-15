@@ -30,7 +30,7 @@ export default function FlashcardStudyPage({ onBack }: FlashcardStudyPageProps) 
     return (
       <div className="max-w-xl mx-auto py-12 text-center">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="surface-card p-10 gradient-hero">
-          <h1 className="text-3xl font-bold">Hoàn thành deck! 🎯</h1>
+          <h1 className="text-3xl font-bold">Hoàn thành deck! </h1>
           <p className="text-muted-foreground mt-2">Hôm nay bạn đã ôn xong {sampleCards.length} thẻ.</p>
           <div className="mt-6 grid grid-cols-2 gap-3">
             <div className="bg-card border border-border rounded-xl p-4">
