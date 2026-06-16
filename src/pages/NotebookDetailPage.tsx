@@ -1,16 +1,42 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, FileText, Bot, BookOpen, GraduationCap, Plus } from "lucide-react";
-import { notebooks, documents, quizzes, decks } from "../lib/mock-data";
-import type { Notebook } from "../lib/mock-data";
+import { useState } from "react";
+import { ArrowLeft, FileText, Bot, BookOpen, GraduationCap, Plus, Edit2, X } from "lucide-react";
+import { documents, quizzes, decks } from "../lib/mock-data";
+import { notebookService, NotebookDTO } from "../services/notebookService";
+import { Notify } from "notiflix";
 
 interface NotebookDetailPageProps {
-  notebook: Notebook;
+  notebook: NotebookDTO;
   onBack: () => void;
   onNavigate: (tab: number) => void;
 }
 
-export default function NotebookDetailPage({ notebook, onBack, onNavigate }: NotebookDetailPageProps) {
+export default function NotebookDetailPage({ notebook: initialNotebook, onBack, onNavigate }: NotebookDetailPageProps) {
   const nbDocs = documents.slice(0, 4);
+  const [notebook, setNotebook] = useState<NotebookDTO>(initialNotebook);
+  
+  // Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState(notebook.title);
+  const [editSubjectId, setEditSubjectId] = useState(notebook.subjectId.toString());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleUpdate = async () => {
+    if (!editTitle.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const res = await notebookService.updateNotebook(notebook.id, Number(editSubjectId), editTitle);
+      if (res.success) {
+        setNotebook(res.data);
+        setIsEditModalOpen(false);
+        Notify.success("Cập nhật Notebook thành công");
+      }
+    } catch (e: any) {
+      Notify.failure(e.message || "Lỗi cập nhật Notebook");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -28,11 +54,19 @@ export default function NotebookDetailPage({ notebook, onBack, onNavigate }: Not
       >
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xs px-2 py-0.5 rounded-md bg-card border border-border font-medium">
-            {notebook.subject}
+            {notebook.subjectCode}
           </span>
-          <span className="text-xs text-muted-foreground">Cập nhật {notebook.updated}</span>
+          <span className="text-xs text-muted-foreground">Cập nhật {new Date(notebook.createdAt).toLocaleDateString()}</span>
         </div>
-        <h1 className="text-3xl font-bold">{notebook.title}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">{notebook.title}</h1>
+          <button 
+            onClick={() => setIsEditModalOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Edit2 size={18} />
+          </button>
+        </div>
         <p className="text-muted-foreground mt-2 max-w-2xl">
           Workspace cá nhân để tổng hợp tài liệu, đặt câu hỏi AI và luyện tập trước kỳ thi.
         </p>
@@ -56,7 +90,7 @@ export default function NotebookDetailPage({ notebook, onBack, onNavigate }: Not
         <div className="surface-card p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-lg font-semibold flex items-center gap-2">
-              <FileText size={18} className="text-primary" /> Tài liệu ({notebook.docs})
+              <FileText size={18} className="text-primary" /> Tài liệu ({notebook.documentCount})
             </h2>
             <button onClick={() => onNavigate(2)} className="text-sm text-primary">
               Tất cả →
@@ -122,6 +156,63 @@ export default function NotebookDetailPage({ notebook, onBack, onNavigate }: Not
           </div>
         </div>
       </div>
+
+      {/* Modal Sửa Notebook */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="surface-card w-full max-w-md rounded-2xl shadow-2xl p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-display text-xl font-bold">Chỉnh sửa Notebook</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Tiêu đề Notebook</label>
+                <input 
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="Nhập tên..."
+                  className="w-full h-10 px-3 rounded-xl bg-card border border-border outline-none focus:border-primary text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Môn học</label>
+                <select 
+                  value={editSubjectId}
+                  onChange={(e) => setEditSubjectId(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-card border border-border outline-none focus:border-primary text-sm"
+                >
+                  <option value="12">SWR302</option>
+                  <option value="5">PRN221</option>
+                  <option value="1">SWP391</option>
+                  <option value="2">SWT301</option>
+                  <option value="3">PRJ301</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 mt-8">
+              <button onClick={() => setIsEditModalOpen(false)} className="px-4 h-10 rounded-xl text-sm font-medium hover:bg-muted transition-colors">
+                Hủy
+              </button>
+              <button 
+                onClick={handleUpdate}
+                disabled={isSubmitting || !editTitle.trim()}
+                className="px-6 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 hover:bg-primary/90 transition-colors"
+              >
+                {isSubmitting ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,9 +13,10 @@ import {
   LogOut,
   X,
   User,
+  Users,
+  UserCheck,
   Key,
   CheckCircle2,
-  AlertCircle,
   Camera,
   Cpu,
   MessageSquare,
@@ -23,7 +24,10 @@ import {
   LucideIcon
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { userService, UserDTO, BadgeDTO, TestHistoryDTO, ActivityLogDTO, AIUsageDTO } from "../services/userService";
+import { createPortal } from "react-dom";
+import { userService, UserDTO, TestHistoryDTO, ActivityLogDTO, AIUsageDTO } from "../services/userService";
+import { communityService, ReferralDTO } from "../services/communityService";
+import { communityRoleService, CommunityRoleDTO } from "../services/communityRoleService";
 import { feedbackService } from "../services/feedbackService";
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
@@ -63,11 +67,17 @@ interface ProfilePageProps {
 export default function ProfilePage({ onLogout }: ProfilePageProps) {
   // ── 📊 HỆ THỐNG STATE KẾT NỐI API THỰC TẾ ──
   const [userInfo, setUserInfo] = useState<UserDTO | null>(null);
-  const [badges, setBadges] = useState<any[]>([]); // Đổi thành cấu trúc động có chứa color tint
+  const [badges, setBadges] = useState<any[]>([]);
   const [testHistory, setTestHistory] = useState<TestHistoryDTO[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLogDTO[]>([]);
   const [aiUsage, setAiUsage] = useState<AIUsageDTO | null>(null);
+  const [myReferral, setMyReferral] = useState<ReferralDTO | null>(null);
+  const [myRoles, setMyRoles] = useState<CommunityRoleDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // States quản lý Mã giới thiệu
+  const [referralCodeInput, setReferralCodeInput] = useState("");
+  const [applyingReferral, setApplyingReferral] = useState(false);
 
   // States quản lý UI điều khiển Hộp thoại Cài đặt
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -78,7 +88,6 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
   const [oldPasswordInput, setOldPasswordInput] = useState("");
   const [newPasswordInput, setNewPasswordInput] = useState("");
   const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
-  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // States quản lý Form gửi góp ý / Báo cáo lỗi
   const [fbTitle, setFbTitle] = useState("");
@@ -91,22 +100,23 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
   const loadFullProfileData = async () => {
     setIsLoading(true);
     try {
-      const [profileRes, badgesRes, testsRes, logsRes, aiRes] = await Promise.all([
+      const [profileRes, badgesRes, testsRes, logsRes, aiRes, refRes, rolesRes] = await Promise.all([
         userService.getMyProfile(),
         userService.getMyBadges(),
         userService.getMyTestHistory({ page: 0, size: 5 }),
         userService.getMyActivityLogs({ page: 0, size: 3 }),
-        userService.getMyAIUsage()
+        userService.getMyAIUsage(),
+        communityService.getMyReferralInfo().catch(() => null),
+        communityRoleService.getMyCommunityRoles().catch(() => null)
       ]);
 
-      if (profileRes.success) {
+      if (profileRes.success && profileRes.data) {
         setUserInfo(profileRes.data);
         setEditName(profileRes.data.fullName);
         setEditAvatarUrl(profileRes.data.avatarUrl);
       }
 
-      // Đồng bộ Badge kết hợp ánh xạ sắc màu sắc tố chuẩn theo ảnh đặc tả của ông
-      if (badgesRes.success) {
+      if (badgesRes.success && badgesRes.data) {
         const mappedBadges = badgesRes.data.map((b: any, index: number) => {
           const colorMap = ["165", "35", "200", "75"];
           return {
@@ -116,9 +126,11 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
         });
         setBadges(mappedBadges);
       }
-      if (testsRes.success) setTestHistory(testsRes.data.items);
-      if (logsRes.success) setActivityLogs(logsRes.data.items);
-      if (aiRes.success) setAiUsage(aiRes.data);
+      if (testsRes.success && testsRes.data) setTestHistory(testsRes.data.items || []);
+      if (logsRes.success && logsRes.data) setActivityLogs(logsRes.data.items || []);
+      if (aiRes.success && aiRes.data) setAiUsage(aiRes.data.items?.[0] || null);
+      if (refRes?.success && refRes.data) setMyReferral(refRes.data);
+      if (rolesRes?.success && rolesRes.data) setMyRoles(rolesRes.data);
 
     } catch (err: any) {
       console.warn("⚠️ Hệ thống tự động kích hoạt chế độ Fallback Mock do chưa kết nối được Server:", err);
@@ -126,7 +138,6 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
       setUserInfo(MOCK_USER_FALLBACK);
       setEditName(MOCK_USER_FALLBACK.fullName);
 
-      // 🛡️ GIỮ NGUYÊN VẸN 100% CẤU TRÚC MẢNG HUY HIỆU GỐC THEO ẢNH ĐẶC TẢ
       setBadges([
         { id: 1, name: "Người mới", description: "Hoàn thành onboarding", color: "165" },
         { id: 2, name: "Chăm chỉ", description: "Học 7 ngày liên tiếp", color: "35" },
@@ -171,7 +182,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
 
     if (score <= 1) return { score: 1, label: "Yếu ", color: "bg-red-500", textColor: "text-red-500", width: "w-1/3" };
     if (score === 2) return { score: 2, label: "Trung bình ", color: "bg-amber-500", textColor: "text-amber-500", width: "w-2/3" };
-    return { score: 3, label: "Mạnh Thách thức Hacker", color: "bg-green-500", textColor: "text-green-500", width: "w-full" };
+    return { score: 3, label: "Mạnh", color: "bg-green-500", textColor: "text-green-500", width: "w-full" };
   };
 
   const pwdStrength = checkPasswordStrength(newPasswordInput);
@@ -180,7 +191,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setStatusMessage({ type: "error", text: "Dung lượng ảnh đại diện không được vượt quá 5MB!" });
+        Notify.failure("Dung lượng ảnh đại diện không được vượt quá 5MB!");
         return;
       }
       const reader = new FileReader();
@@ -194,15 +205,19 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
     try {
       if (oldPasswordInput || newPasswordInput || confirmPasswordInput) {
         if (!oldPasswordInput || !newPasswordInput || !confirmPasswordInput) {
-          setStatusMessage({ type: "error", text: "Vui lòng điền đầy đủ thông tin Mật khẩu hiện tại, Mật khẩu mới và Xác nhận!" });
+          Notify.failure("Vui lòng điền đầy đủ thông tin Mật khẩu hiện tại, Mật khẩu mới và Xác nhận!");
+          return;
+        }
+        if (newPasswordInput === oldPasswordInput) {
+          Notify.failure("Mật khẩu mới không được trùng với mật khẩu hiện tại!");
           return;
         }
         if (newPasswordInput !== confirmPasswordInput) {
-          setStatusMessage({ type: "error", text: "Mật khẩu mới nhập vào không trùng khớp!" });
+          Notify.failure("Mật khẩu mới nhập vào không trùng khớp!");
           return;
         }
         if (pwdStrength.score === 1) {
-          setStatusMessage({ type: "error", text: "Hệ thống từ chối lưu mật khẩu yếu!" });
+          Notify.failure("Hệ thống từ chối lưu mật khẩu yếu!");
           return;
         }
         await userService.changeMyPassword({ oldPasswordInput, newPasswordInput });
@@ -214,13 +229,13 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
       });
 
       if (updateRes.success) {
-        setUserInfo(updateRes.data);
-        setStatusMessage({ type: "success", text: "Cập nhật tài khoản thành công!" });
+        setUserInfo(updateRes.data || null);
+        Notify.success("Cập nhật tài khoản thành công!");
         setOldPasswordInput(""); setNewPasswordInput(""); setConfirmPasswordInput("");
         setTimeout(() => setIsSettingsOpen(false), 1000);
       }
     } catch (err: any) {
-      setStatusMessage({ type: "error", text: err.message || "Thao tác cập nhật thất bại!" });
+      Notify.failure(err.message || "Thao tác cập nhật thất bại!");
     }
   };
 
@@ -238,13 +253,34 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
         screenUrl: window.location.pathname
       });
       if (res.success) {
-        Notify.success("Gửi báo cáo lỗi thành công! Ban quản trị sẽ rà soát sớm nhất. ");
+        Notify.success("Gửi báo cáo lỗi thành công! Ban quản trị sẽ rà soát sớm nhất.");
         setFbTitle(""); setFbContent("");
       }
     } catch (err) {
       Notify.failure("Gửi phản hồi thất bại!");
-    } {
+    } finally {
       setFbSubmitting(false);
+    }
+  };
+
+  const handleApplyReferral = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!referralCodeInput.trim()) {
+      Notify.failure("Vui lòng nhập mã giới thiệu!");
+      return;
+    }
+    setApplyingReferral(true);
+    try {
+      const res = await communityService.applyReferralCode(referralCodeInput.toUpperCase());
+      if (res.success && res.data) {
+        setMyReferral(res.data);
+        Notify.success(`Áp dụng mã thành công! Bạn nhận được thêm điểm thưởng.`);
+        setReferralCodeInput("");
+      }
+    } catch (err: any) {
+      Notify.failure(err.message || "Lỗi khi áp dụng mã giới thiệu");
+    } finally {
+      setApplyingReferral(false);
     }
   };
 
@@ -314,7 +350,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
         </div>
       </section>
 
-      {/* ── 🎯 KHU VỰC KHÔI PHỤC NGUYÊN VẸN 100% THIẾT KẾ HUY HIỆU GỐC THEO ẢNH ĐẶC TẢ ── */}
+      {/* Huy hiệu */}
       <section className="surface-card p-6">
         <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2 text-foreground text-left">
           <Award className="text-coral" size={18} /> Huy hiệu của bạn
@@ -348,6 +384,35 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
           </div>
         )}
       </section>
+
+      {/* Vai trò cộng đồng */}
+      {myRoles.length > 0 && (
+        <section className="surface-card p-6">
+          <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2 text-foreground text-left">
+            <UserCheck className="text-primary" size={18} /> Vai trò cộng đồng
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {myRoles.map((r, i) => (
+              <motion.div
+                key={r.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="p-4 rounded-2xl bg-muted/40 border border-border/50 text-left relative overflow-hidden"
+              >
+                <div className="absolute -right-4 -top-4 size-20 bg-primary/10 rounded-full blur-2xl"></div>
+                <div className="font-bold text-foreground text-sm tracking-wide">{r.roleType}</div>
+                <div className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider font-semibold">
+                  Phạm vi: {r.scopeType} {r.scopeId ? `(${r.scopeId})` : ""}
+                </div>
+                <div className="text-[11px] font-mono text-primary/80 mt-3 pt-3 border-t border-border/50">
+                  Từ {new Date(r.startAt).toLocaleDateString("vi-VN")} {r.endAt && `- ${new Date(r.endAt).toLocaleDateString("vi-VN")}`}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Lịch sử thi & Nhật ký hoạt động */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -402,6 +467,88 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
         </div>
       </section>
 
+      {/* Mã giới thiệu */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="surface-card p-6 flex flex-col justify-between">
+          <div className="text-left mb-4 flex items-start justify-between">
+            <div>
+              <h2 className="font-display text-base font-bold text-foreground flex items-center gap-2">
+                <Users size={18} className="text-primary" /> Mã giới thiệu của tôi
+              </h2>
+              <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Chia sẻ mã này với bạn bè để cùng nhận điểm thưởng</p>
+            </div>
+            {myReferral && (
+              <div className="text-right shrink-0">
+                <div className="text-2xl font-black text-warning">{myReferral.rewardPoints}</div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Điểm thưởng</div>
+              </div>
+            )}
+          </div>
+          {myReferral ? (
+            <div className="flex flex-col gap-3 mt-auto">
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-neon rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+                <div className="relative flex items-center justify-between p-4 bg-card rounded-xl border border-border/50">
+                  <div className="font-mono text-2xl font-black tracking-[0.2em] text-foreground mx-auto">
+                    {myReferral.code}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(myReferral.code);
+                  Notify.success("Đã copy mã giới thiệu!");
+                }}
+                className="w-full h-11 rounded-xl bg-primary/10 text-primary font-bold text-sm hover:bg-primary/20 transition-colors"
+              >
+                Sao chép mã
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-6 text-center mt-auto">Chưa có thông tin mã giới thiệu</p>
+          )}
+        </div>
+
+        <div className="surface-card p-6 flex flex-col justify-between">
+          <div className="text-left mb-4">
+            <h2 className="font-display text-base font-bold text-foreground flex items-center gap-2">
+              <Key size={18} className="text-coral" /> Nhập mã giới thiệu
+            </h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Áp dụng mã của người khác để nhận ngay +20 reputation</p>
+          </div>
+          {myReferral?.status === "APPLIED" ? (
+            <div className="flex flex-col items-center justify-center py-6 mt-auto bg-muted/20 rounded-xl border border-border/50">
+              <div className="size-12 rounded-full bg-success/10 text-success grid place-items-center mb-3">
+                <CheckCircle2 size={24} />
+              </div>
+              <div className="font-bold text-foreground">Đã áp dụng mã thành công</div>
+              <p className="text-xs text-muted-foreground mt-1">Bạn đã nhận được điểm thưởng giới thiệu.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleApplyReferral} className="flex flex-col gap-3 mt-auto">
+              <input
+                type="text"
+                placeholder="Nhập mã (VD: KHOA2026)"
+                value={referralCodeInput}
+                onChange={e => setReferralCodeInput(e.target.value)}
+                className="w-full px-4 h-12 rounded-xl bg-muted/30 border border-border/50 focus:border-primary focus:bg-card outline-none font-mono text-center text-lg uppercase transition-colors placeholder:text-sm placeholder:normal-case placeholder:font-sans"
+              />
+              <button
+                type="submit"
+                disabled={applyingReferral || !referralCodeInput.trim()}
+                className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-bold hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              >
+                {applyingReferral ? (
+                  <><div className="size-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> Đang xử lý...</>
+                ) : (
+                  <><Send size={16} /> Áp dụng mã ngay</>
+                )}
+              </button>
+            </form>
+          )}
+        </div>
+      </section>
+
       {/* Khung gửi Góp ý & Báo cáo lỗi */}
       <section className="surface-card p-6 bg-card">
         <div className="text-left mb-4">
@@ -425,7 +572,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nội dung mô tả chi tiết:</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nội dung báo cáo chi tiết:</label>
               <textarea
                 value={fbContent}
                 onChange={(e) => setFbContent(e.target.value)}
@@ -447,69 +594,81 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
       </section>
 
       {/* PANEL CÀI ĐẶT MODAL */}
-      <AnimatePresence>
-        {isSettingsOpen && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSettingsOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40" />
-            <motion.div initial={{ x: "100%", opacity: 0.9 }} animate={{ x: 0, opacity: 1 }} exit={{ x: "100%", opacity: 0.9 }} transition={{ type: "spring", damping: 26, stiffness: 220 }} className="fixed top-0 right-0 h-screen w-full max-w-md bg-card border-l border-border shadow-2xl p-6 z-50 overflow-y-auto font-sans">
-              <div className="flex items-center justify-between pb-4 border-b border-border">
-                <div className="flex items-center gap-2"><Settings className="text-primary" size={20} /><h3 className="text-lg font-bold text-foreground">Cấu hình tài khoản</h3></div>
-                <button onClick={() => setIsSettingsOpen(false)} className="size-8 rounded-lg hover:bg-muted grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"><X size={16} /></button>
-              </div>
+      {typeof document !== "undefined" ? createPortal(
+        <AnimatePresence>
+          {isSettingsOpen && (
+            <>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsSettingsOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]" />
 
-              <form onSubmit={handleSaveSettings} className="mt-5 space-y-6">
-                <div className="space-y-3">
-                  <div className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1"><GraduationCap size={12} /> Thông tin đào tạo FPT</div>
-                  <div className="rounded-xl bg-muted/50 border border-border/60 p-4 space-y-3 text-sm text-left">
-                    <div className="flex justify-between items-center border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Mã số sinh viên:</span><span className="font-mono font-bold text-foreground">SE192585</span></div>
-                    <div className="flex flex-col gap-1 border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Chuyên ngành chính:</span><span className="font-semibold text-foreground">{COMBO_MAJORS[userInfo.comboId ?? 1]?.major || "Kỹ thuật Phần mềm"}</span></div>
-                    <div className="flex flex-col gap-1"><span className="text-muted-foreground font-medium">Chuyên ngành hẹp:</span><span className="inline-flex items-center gap-1.5 font-bold text-coral bg-coral/5 border border-coral/10 px-2.5 py-1 rounded-lg w-fit mt-1 text-xs">{COMBO_MAJORS[userInfo.comboId ?? 1]?.spec || "Hệ thống nhúng & IoT"}</span></div>
-                  </div>
+              {/* 🛠️ CHÌA KHÓA: Injected variant bẫy ẩn thanh cuộn [&::-webkit-scrollbar]:hidden vào wrapper panel dưới đây */}
+              <motion.div
+                initial={{ x: "100%", opacity: 0.9 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: "100%", opacity: 0.9 }}
+                transition={{ type: "spring", damping: 26, stiffness: 220 }}
+                className="fixed top-0 right-0 h-screen w-full max-w-md bg-card border-l border-border shadow-2xl p-6 z-[100] overflow-y-auto font-sans [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-border">
+                  <div className="flex items-center gap-2"><Settings className="text-primary" size={20} /><h3 className="text-lg font-bold text-foreground">Cấu hình tài khoản</h3></div>
+                  <button onClick={() => setIsSettingsOpen(false)} className="size-8 rounded-lg hover:bg-muted grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"><X size={16} /></button>
                 </div>
 
-                <div className="space-y-4 pt-2 border-t border-border/50 text-left">
-                  <div className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1"><User size={12} /> Thay đổi thông tin cá nhân</div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-muted-foreground">Ảnh đại diện tài khoản:</label>
-                    <div className="flex gap-4 items-center">
-                      <div onClick={() => fileInputRef.current?.click()} className="size-20 rounded-2xl bg-ink text-cream text-2xl font-bold grid place-items-center cursor-pointer overflow-hidden relative border border-border/40 shadow-inner group shrink-0">
-                        {editAvatarUrl ? <img src={editAvatarUrl} alt="Preview" className="w-full h-full object-cover group-hover:opacity-70 transition-opacity" /> : userInfo.fullName.slice(0, 2).toUpperCase()}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white gap-1 transition-all duration-200"><Camera size={16} /><span className="text-[9px] font-bold uppercase tracking-wider">Thay ảnh</span></div>
-                      </div>
-                      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                      <div className="text-xs text-muted-foreground leading-relaxed font-medium">Bấm vào ô vuông để upload ảnh mới.</div>
+                <form onSubmit={handleSaveSettings} className="mt-5 space-y-6 pb-12">
+                  <div className="space-y-3">
+                    <div className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1"><GraduationCap size={12} /> Thông tin đào tạo FPT</div>
+                    <div className="rounded-xl bg-muted/50 border border-border/60 p-4 space-y-3 text-sm text-left">
+                      <div className="flex justify-between items-center border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Mã số sinh viên:</span><span className="font-mono font-bold text-foreground">SE192585</span></div>
+                      <div className="flex flex-col gap-1 border-b border-border/40 pb-2"><span className="text-muted-foreground font-medium">Chuyên ngành chính:</span><span className="font-semibold text-foreground">{COMBO_MAJORS[userInfo.comboId ?? 1]?.major || "Kỹ thuật Phần mềm"}</span></div>
+                      <div className="flex flex-col gap-1"><span className="text-muted-foreground font-medium">Chuyên ngành hẹp:</span><span className="inline-flex items-center gap-1.5 font-bold text-coral bg-coral/5 border border-coral/10 px-2.5 py-1 rounded-lg w-fit mt-1 text-xs">{COMBO_MAJORS[userInfo.comboId ?? 1]?.spec || "Hệ thống nhúng & IoT"}</span></div>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground">Họ và tên hiển thị:</label>
-                    <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-3.5 h-10 rounded-xl bg-muted/60 border border-transparent focus:border-primary focus:bg-card outline-none text-sm transition-all font-medium text-foreground" required />
-                  </div>
-                </div>
 
-                <div className="space-y-4 pt-2 border-t border-border/50 text-left">
-                  <div className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1"><Key size={12} /> Cập nhật mật khẩu bảo mật</div>
-                  <div className="space-y-1.5"><label className="text-xs font-semibold text-muted-foreground">Mật khẩu hiện tại:</label><input type="password" value={oldPasswordInput} onChange={(e) => setOldPasswordInput(e.target.value)} className="w-full px-3.5 h-10 rounded-xl bg-muted/60 border border-transparent focus:border-primary focus:bg-card outline-none text-sm transition-all font-mono" placeholder="••••••••" /></div>
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center"><label className="text-xs font-semibold text-muted-foreground">Mật khẩu mới:</label>{newPasswordInput && <span className={`text-[11px] font-bold ${pwdStrength.textColor}`}>Độ mạnh: {pwdStrength.label}</span>}</div>
-                    <input type="password" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} className="w-full px-3.5 h-10 rounded-xl bg-muted/60 border border-transparent focus:border-primary focus:bg-card outline-none text-sm transition-all font-mono" placeholder="••••••••" />
-                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mt-1"><div className={`h-full ${pwdStrength.color} ${pwdStrength.width} transition-all duration-300`} /></div>
+                  <div className="space-y-4 pt-2 border-t border-border/50 text-left">
+                    <div className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1"><User size={12} /> Thay đổi thông tin cá nhân</div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-muted-foreground">Ảnh đại diện tài khoản:</label>
+                      <div className="flex gap-4 items-center">
+                        <div onClick={() => fileInputRef.current?.click()} className="size-20 rounded-2xl bg-ink text-cream text-2xl font-bold grid place-items-center cursor-pointer overflow-hidden relative border border-border/40 shadow-inner group shrink-0">
+                          {editAvatarUrl ? <img src={editAvatarUrl} alt="Preview" className="w-full h-full object-cover group-hover:opacity-70 transition-opacity" /> : userInfo.fullName.slice(0, 2).toUpperCase()}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white gap-1 transition-all duration-200"><Camera size={16} /><span className="text-[9px] font-bold uppercase tracking-wider">Thay ảnh</span></div>
+                        </div>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                        <div className="text-xs text-muted-foreground leading-relaxed font-medium">Bấm vào ô vuông để upload ảnh mới.</div>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Họ và tên hiển thị:</label>
+                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-3.5 h-10 rounded-xl bg-muted/60 border border-transparent focus:border-primary focus:bg-card outline-none text-sm transition-all font-medium text-foreground" required />
+                    </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground">Nhập lại mật khẩu mới:</label>
-                    <input type="password" value={confirmPasswordInput} onChange={(e) => setConfirmPasswordInput(e.target.value)} className="w-full px-3.5 h-10 rounded-xl bg-muted/60 border border-transparent focus:border-primary focus:bg-card outline-none text-sm transition-all font-mono" placeholder="••••••••" />
-                    {confirmPasswordInput && newPasswordInput !== confirmPasswordInput && <p className="text-[11px] text-red-500 font-medium mt-0.5 animate-pulse">Mật khẩu nhập lại không khớp!</p>}
-                  </div>
-                </div>
 
-                <div className="flex gap-2 pt-4 border-t border-border/50 mt-4">
-                  <button type="button" onClick={() => { setIsSettingsOpen(false); setOldPasswordInput(""); setNewPasswordInput(""); setConfirmPasswordInput(""); }} className="flex-1 h-10 rounded-xl bg-muted text-muted-foreground text-xs font-bold hover:bg-muted/80 active:scale-95 transition-all cursor-pointer">Hủy bỏ</button>
-                  <button type="submit" className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer">Lưu thay đổi</button>
-                </div>
-              </form>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                  {/* 🔒 Khối cập nhật mật khẩu, đã được bọc logic chặn đổi trùng mật khẩu cũ */}
+                  <div className="space-y-4 pt-2 border-t border-border/50 text-left">
+                    <div className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1"><Key size={12} /> Cập nhật mật khẩu bảo mật</div>
+                    <div className="space-y-1.5"><label className="text-xs font-semibold text-muted-foreground">Mật khẩu hiện tại:</label><input type="password" value={oldPasswordInput} onChange={(e) => setOldPasswordInput(e.target.value)} className="w-full px-3.5 h-10 rounded-xl bg-muted/60 border border-transparent focus:border-primary focus:bg-card outline-none text-sm transition-all font-mono" placeholder="••••••••" /></div>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center"><label className="text-xs font-semibold text-muted-foreground">Mật khẩu mới:</label>{newPasswordInput && <span className={`text-[11px] font-bold ${pwdStrength.textColor}`}>Độ mạnh: {pwdStrength.label}</span>}</div>
+                      <input type="password" value={newPasswordInput} onChange={(e) => setNewPasswordInput(e.target.value)} className="w-full px-3.5 h-10 rounded-xl bg-muted/60 border border-transparent focus:border-primary focus:bg-card outline-none text-sm transition-all font-mono" placeholder="••••••••" />
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mt-1"><div className={`h-full ${pwdStrength.color} ${pwdStrength.width} transition-all duration-300`} /></div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground">Nhập lại mật khẩu mới:</label>
+                      <input type="password" value={confirmPasswordInput} onChange={(e) => setConfirmPasswordInput(e.target.value)} className="w-full px-3.5 h-10 rounded-xl bg-muted/60 border border-transparent focus:border-primary focus:bg-card outline-none text-sm transition-all font-mono" placeholder="••••••••" />
+                      {confirmPasswordInput && newPasswordInput !== confirmPasswordInput && <p className="text-[11px] text-red-500 font-medium mt-0.5 animate-pulse">Mật khẩu nhập lại không khớp!</p>}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4 border-t border-border/50 mt-4">
+                    <button type="button" onClick={() => { setIsSettingsOpen(false); setOldPasswordInput(""); setNewPasswordInput(""); setConfirmPasswordInput(""); }} className="flex-1 h-10 rounded-xl bg-muted text-muted-foreground text-xs font-bold hover:bg-muted/80 active:scale-95 transition-all cursor-pointer">Hủy bộ</button>
+                    <button type="submit" className="flex-1 h-10 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm cursor-pointer">Lưu thay đổi</button>
+                  </div>
+                </form>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      ) : null}
     </div>
   );
 }

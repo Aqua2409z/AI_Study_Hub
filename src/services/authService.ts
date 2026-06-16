@@ -86,6 +86,47 @@ export async function authRequest<T>(endpoint: string, bodyPayload: any): Promis
         }
       } as unknown as T;
     }
+
+    if (endpoint === "/auth/register") {
+      return {
+        success: true,
+        message: "Register successfully",
+        data: {
+          id: 1,
+          email: bodyPayload.email,
+          fullName: bodyPayload.fullName || "Nguyen Van A",
+          avatarUrl: "https://cdn.example.com/avatar/a.png",
+          currentSemesterId: bodyPayload.currentSemesterId || 3,
+          comboId: bodyPayload.comboId || 2,
+          role: "STUDENT",
+          reputationPoints: 120,
+          isActive: true,
+          createdAt: "2026-06-12T21:30:00"
+        }
+      } as unknown as T;
+    }
+
+    if (endpoint === "/auth/forgot-password") {
+      return {
+        success: true,
+        message: "Reset token generated. In production, token is sent by email.",
+        data: {
+          resetTokenPreview: "mock-reset-token-123",
+          expiredAt: "2026-06-12T23:30:00"
+        }
+      } as unknown as T;
+    }
+
+    if (endpoint === "/auth/reset-password") {
+      return {
+        success: true,
+        message: "Password reset successfully",
+        data: {
+          passwordChanged: true
+        }
+      } as unknown as T;
+    }
+
     throw error;
   }
 }

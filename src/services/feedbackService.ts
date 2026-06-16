@@ -46,7 +46,7 @@ export const feedbackService = {
         { method: "POST", body: JSON.stringify(payload) }
       );
     } catch (err) {
-      console.warn("⚠️ Fallback: Gửi feedback thành công qua cổng cứu nguy.");
+      console.warn("Fallback: Gửi feedback thành công qua cổng cứu nguy.");
       return {
         success: true,
         message: "Success",

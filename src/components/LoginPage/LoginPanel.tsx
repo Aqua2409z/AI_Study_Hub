@@ -61,8 +61,8 @@ interface LoginPanelProps {
 }
 
 export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps) {
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">(() => {
-    return (localStorage.getItem("loginPanelMode") as "login" | "signup" | "forgot") || "login";
+  const [mode, setMode] = useState<"login" | "signup" | "forgot" | "reset">(() => {
+    return (localStorage.getItem("loginPanelMode") as "login" | "signup" | "forgot" | "reset") || "login";
   });
 
   const [showCombo, setShowCombo] = useState(false);
@@ -71,6 +71,7 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetToken, setResetToken] = useState("");
   const [resetMessage, setResetMessage] = useState("");
   const formContainerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -110,7 +111,7 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
         clearInterval(timer);
         setLoading(false);
         // Báo lỗi ngắt kết nối trực tiếp khi đóng Popup
-        Notify.failure(`Cổng kết nối API ${provider} thất bại! Vui lòng thử lại bằng Email sinh viên.`);
+        Notify.failure(`Kết nối ${provider} thất bại! Vui lòng thử lại sau.`);
       }
     }, 1000);
   };
@@ -208,6 +209,36 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
       }
     } catch (err: any) {
       Notify.failure(err.message || "Xử lý yêu cầu xác thực thất bại!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetToken.trim()) {
+      Notify.failure("Vui lòng nhập mã khôi phục (Reset Token)!");
+      return;
+    }
+    if (strength.score < 2) {
+      Notify.failure("Mật khẩu mới quá yếu! Hãy gia cố thêm ký tự đặc biệt hoặc số.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      Notify.failure("Mật khẩu xác nhận nhập lại chưa trùng khớp!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await authService.resetPassword(resetToken, password);
+      if (response.success) {
+        Notify.success("Khôi phục mật khẩu thành công! Vui lòng đăng nhập lại bằng mật khẩu mới.");
+        setMode("login");
+        setPassword(""); setConfirmPassword(""); setResetToken("");
+      }
+    } catch (err: any) {
+      Notify.failure(err.message || "Khôi phục mật khẩu thất bại.");
     } finally {
       setLoading(false);
     }
@@ -337,7 +368,7 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
                         type="button"
-                        onClick={() => { setMode("login"); setEmail(""); setResetMessage(""); setPassword(""); setConfirmPassword(""); setFullName(""); }}
+                        onClick={() => { setMode("login"); setEmail(""); setResetMessage(""); setPassword(""); setConfirmPassword(""); setFullName(""); setResetToken(""); }}
                         className="group flex items-center gap-2 text-cream/40 hover:text-neon mb-5 transition-all duration-300 font-mono text-[11px] uppercase tracking-wider cursor-pointer"
                       >
                         <ArrowLeft size={13} className="group-hover:-translate-x-1 transition-transform" /> Back to Login
@@ -357,7 +388,7 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
                     )}
                   </AnimatePresence>
 
-                  {mode === "forgot" ? (
+                  {mode === "forgot" || mode === "reset" ? (
                     <>
                       <div className="mb-3 flex items-center gap-2 gsap-fade-header">
                         <div className="p-1.5 rounded-lg bg-neon/10 border border-neon/20">
@@ -369,23 +400,61 @@ export default function LoginPanel({ onLoginSuccess, onClose }: LoginPanelProps)
                       <h1 className="text-3xl font-black tracking-tight text-white uppercase font-grotesk mb-1 gsap-fade-header">Reset Password</h1>
                       <p className="text-2xl font-condiment text-neon mb-6 drop-shadow-[0_0_8px_rgba(111,255,0,0.3)] gsap-fade-header">Get back in</p>
 
-                      {resetMessage ? (
-                        <div className="p-4 bg-emerald-500/10 border border-emerald-400/20 rounded-2xl mb-4 gsap-fade-field">
-                          <p className="text-xs font-mono text-center text-emerald-300 flex items-center justify-center gap-2">
-                            <Check size={14} /> {resetMessage}
-                          </p>
-                        </div>
+                      {mode === "forgot" ? (
+                        <>
+                          {resetMessage ? (
+                            <div className="p-4 bg-emerald-500/10 border border-emerald-400/20 rounded-2xl mb-4 gsap-fade-field">
+                              <p className="text-xs font-mono text-center text-emerald-300 flex items-center justify-center gap-2">
+                                <Check size={14} /> {resetMessage}
+                              </p>
+                            </div>
+                          ) : (
+                            <form onSubmit={handleForgotPassword} className="space-y-4">
+                              <div className="gsap-fade-field">
+                                <Field Icon={Mail} type="email" placeholder="Email address" value={email} onChange={setEmail} />
+                              </div>
+                              <button
+                                type="submit"
+                                disabled={loading || !email}
+                                className="w-full py-3.5 rounded-2xl bg-neon text-space font-grotesk uppercase tracking-widest text-xs hover:brightness-110 active:scale-[0.99] transition-all duration-300 disabled:opacity-40 font-black shadow-[0_0_25px_rgba(111,255,0,0.2)] gsap-fade-btn cursor-pointer"
+                              >
+                                {loading ? "Sending Orbit Link..." : "Send Reset Link"}
+                              </button>
+                            </form>
+                          )}
+                          <div className="mt-5 text-center gsap-fade-footer">
+                            <span className="text-[11px] font-mono text-cream/40 uppercase tracking-wider">Đã có mã khôi phục? </span>
+                            <button type="button" onClick={() => { setMode("reset"); setResetMessage(""); }} className="text-neon hover:text-white font-bold text-[11px] font-mono transition-colors uppercase tracking-wider cursor-pointer">
+                              Tạo mật khẩu mới
+                            </button>
+                          </div>
+                        </>
                       ) : (
-                        <form onSubmit={handleForgotPassword} className="space-y-4">
+                        <form onSubmit={handleResetPassword} className="space-y-4">
                           <div className="gsap-fade-field">
-                            <Field Icon={Mail} type="email" placeholder="Email address" value={email} onChange={setEmail} />
+                            <Field Icon={Lock} type="text" placeholder="Reset Token" value={resetToken} onChange={setResetToken} />
+                          </div>
+                          <div className="gsap-fade-field">
+                            <Field Icon={Lock} type="password" placeholder="New Password" value={password} onChange={setPassword} />
+                          </div>
+                          <div className="gsap-fade-field">
+                            <Field Icon={Lock} type="password" placeholder="Confirm Password" value={confirmPassword} onChange={setConfirmPassword} />
+                            {confirmPassword && (
+                              <div className="pt-1.5 px-2 text-[10px] font-mono flex items-center gap-1.5">
+                                {password === confirmPassword ? (
+                                  <><Check size={11} className="text-emerald-400" strokeWidth={3} /><span className="text-emerald-400/80">Mật khẩu trùng khớp</span></>
+                                ) : (
+                                  <><X size={11} className="text-red-400" strokeWidth={3} /><span className="text-red-400/80">Mật khẩu chưa khớp</span></>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <button
                             type="submit"
-                            disabled={loading || !email}
+                            disabled={loading || !resetToken || !password || !confirmPassword}
                             className="w-full py-3.5 rounded-2xl bg-neon text-space font-grotesk uppercase tracking-widest text-xs hover:brightness-110 active:scale-[0.99] transition-all duration-300 disabled:opacity-40 font-black shadow-[0_0_25px_rgba(111,255,0,0.2)] gsap-fade-btn cursor-pointer"
                           >
-                            {loading ? "Sending Orbit Link..." : "Send Reset Link"}
+                            {loading ? "Updating..." : "Update Password"}
                           </button>
                         </form>
                       )}

@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, CheckCheck, Search, Bot, Trophy, ShoppingBag, MessageCircle } from "lucide-react";
-import { useMemo, useState } from "react";
-import { notifications as initial } from "../lib/mock-data";
+import { Bell, CheckCheck, Search, Bot, Trophy, ShoppingBag, MessageCircle, Trash2 } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { notificationService, NotificationDTO } from "../services/notificationService";
+import { Notify } from "notiflix";
 
 const iconMap = {
   ai: { Icon: Bot, tint: "165" },
@@ -11,14 +12,70 @@ const iconMap = {
 } as const;
 
 export default function NotificationsPage() {
-  const [list, setList] = useState(initial);
+  const [list, setList] = useState<NotificationDTO[]>([]);
   const [q, setQ] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    setIsLoading(true);
+    try {
+      const res = await notificationService.getMyNotifications({ page: 0, size: 50 });
+      if (res.success) setList(res.data.items);
+    } catch (e: any) {
+      Notify.failure(e.message || "Lỗi tải thông báo");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filtered = useMemo(
-    () => list.filter((n) => n.text.toLowerCase().includes(q.toLowerCase())),
+    () => list.filter((n) => n.content.toLowerCase().includes(q.toLowerCase()) || n.title.toLowerCase().includes(q.toLowerCase())),
     [list, q],
   );
-  const unread = list.filter((n) => n.unread).length;
+  const unread = list.filter((n) => !n.isRead).length;
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const res = await notificationService.markAllAsRead();
+      if (res.success) {
+        setList((p) => p.map((n) => ({ ...n, isRead: true })));
+        Notify.success("Đã đánh dấu đọc tất cả");
+      }
+    } catch (e: any) {
+      Notify.failure(e.message || "Lỗi cập nhật");
+    }
+  };
+
+  const handleMarkAsRead = async (id: number) => {
+    const item = list.find(n => n.id === id);
+    if (item?.isRead) return;
+
+    try {
+      const res = await notificationService.markAsRead(id);
+      if (res.success) {
+        setList((p) => p.map((x) => (x.id === id ? { ...x, isRead: true } : x)));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const res = await notificationService.deleteNotification(id);
+      if (res.success) {
+        setList((p) => p.filter(n => n.id !== id));
+        Notify.success("Đã xóa thông báo");
+      }
+    } catch (e: any) {
+      Notify.failure(e.message || "Lỗi xóa");
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -33,7 +90,7 @@ export default function NotificationsPage() {
         </div>
         <button
           disabled={unread === 0}
-          onClick={() => setList((p) => p.map((n) => ({ ...n, unread: false })))}
+          onClick={handleMarkAllAsRead}
           className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
         >
           <CheckCheck size={16} /> Đọc tất cả
@@ -52,8 +109,16 @@ export default function NotificationsPage() {
 
       <div className="space-y-2">
         <AnimatePresence>
-          {filtered.map((n) => {
-            const meta = iconMap[n.kind];
+          {isLoading ? (
+            <div className="py-12 text-center text-muted-foreground"><div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />Đang tải...</div>
+          ) : filtered.map((n) => {
+            // Determine icon based on title/content keywords (fallback logic for UI)
+            let kind: "ai" | "system" | "market" | "social" = "system";
+            if (n.title.toLowerCase().includes("tài liệu") || n.title.toLowerCase().includes("marketplace")) kind = "market";
+            if (n.content.toLowerCase().includes("ai") || n.title.toLowerCase().includes("ai")) kind = "ai";
+            if (n.title.toLowerCase().includes("bình luận") || n.content.toLowerCase().includes("đánh giá")) kind = "social";
+            
+            const meta = iconMap[kind];
             const Icon = meta.Icon;
             return (
               <motion.div
@@ -62,10 +127,8 @@ export default function NotificationsPage() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                onClick={() =>
-                  setList((p) => p.map((x) => (x.id === n.id ? { ...x, unread: false } : x)))
-                }
-                className={`surface-card p-4 flex gap-3 cursor-pointer ${n.unread ? "border-primary/40" : ""}`}
+                onClick={() => handleMarkAsRead(n.id)}
+                className={`surface-card p-4 flex gap-3 cursor-pointer group ${!n.isRead ? "border-primary/40 bg-primary/5" : ""}`}
               >
                 <div
                   className="size-10 shrink-0 rounded-xl grid place-items-center"
@@ -77,15 +140,24 @@ export default function NotificationsPage() {
                   <Icon size={18} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm leading-snug">{n.text}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{n.time}</div>
+                  <div className="text-sm font-bold">{n.title}</div>
+                  <div className="text-sm leading-snug mt-0.5 text-foreground/90">{n.content}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleString()}</div>
                 </div>
-                {n.unread && <span className="size-2 mt-2 rounded-full bg-primary shrink-0" />}
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  {!n.isRead && <span className="size-2 mt-1 rounded-full bg-primary" />}
+                  <button 
+                    onClick={(e) => handleDelete(n.id, e)}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive hover:text-destructive-foreground opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </motion.div>
             );
           })}
         </AnimatePresence>
-        {filtered.length === 0 && (
+        {!isLoading && filtered.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">Không có thông báo.</div>
         )}
       </div>

@@ -70,27 +70,22 @@ const BASE_URL = "/api";
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-  
   const headers = new Headers(options.headers);
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
+  if (token) headers.set("Authorization", `Bearer ${token}`);
   if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
   const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
-  const result = await response.json();
+
+  // Dòng này cực kỳ quan trọng để xử lý phản hồi rỗng
+  const textData = await response.text();
+  const result = textData ? JSON.parse(textData) : {};
 
   if (!response.ok) {
-    throw {
-      status: response.status,
-      message: result.message || "Đã xảy ra lỗi hệ thống",
-      errorCode: result.errorCode || "UNKNOWN_ERROR"
-    };
+    throw { status: response.status, message: result.message || "Lỗi hệ thống" };
   }
-
-  return result;
+  return result as T;
 }
 
 // ─── 3. INTERACTION UTILS TO CONSTRUCT PARAMS ───────────────────────────────────
@@ -108,7 +103,7 @@ function buildQueryString(params?: { page?: number; size?: number; keyword?: str
 // ─── 4. CORE SERVICE IMPLEMENTATION ─────────────────────────────────────────────
 
 export const userService = {
-  
+
   // ==========================================
   // 🔐 PHÂN HỆ QUẢN TRỊ (ADMIN SCOPE)
   // ==========================================

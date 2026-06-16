@@ -26,6 +26,16 @@ import {
 } from "recharts";
 import { notebooks, notifications, leaderboard, decks } from "@/lib/mock-data";
 
+type Notebook = {
+  id: string;
+  title: string;
+  docs: number;
+  cards: number;
+  updated: string;
+  color: string;
+  quizzes?: number;
+};
+
 // 🎯 Khởi tạo tải chậm (Lazy loading) cho mô hình 3D để tối ưu hóa tốc độ render trang đầu tiên
 const Spline = lazy(() => import("@splinetool/react-spline"));
 

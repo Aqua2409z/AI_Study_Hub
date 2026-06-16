@@ -59,14 +59,14 @@ export const notificationService = {
       );
     } catch (err) {
       // Fallback khi sập mạng / 404 Backend
-      console.warn("⚠️ Fallback: Bơm thông báo dự phòng.");
+      console.warn(" Fallback: Bơm thông báo dự phòng.");
       return {
         success: true,
         message: "Success",
         data: {
           items: [
-            { id: 1601, userId: 1, title: "Tài liệu đã được duyệt 🎖️", content: "Chapter 10 Đề cương nhúng ESP32 đã được approve lên marketplace.", isRead: false, createdAt: "2026-06-12T22:40:00" },
-            { id: 1602, userId: 1, title: "Huy hiệu mới đạt được ✨", content: "Chúc mừng Khoa đã đạt huy hiệu 'Chăm Chỉ' sau 7 ngày học liên tiếp.", isRead: false, createdAt: "2026-06-11T09:15:00" },
+            { id: 1601, userId: 1, title: "Tài liệu đã được duyệt ", content: "Chapter 10 Đề cương nhúng ESP32 đã được approve lên marketplace.", isRead: false, createdAt: "2026-06-12T22:40:00" },
+            { id: 1602, userId: 1, title: "Huy hiệu mới đạt được ", content: "Chúc mừng Khoa đã đạt huy hiệu 'Chăm Chỉ' sau 7 ngày học liên tiếp.", isRead: false, createdAt: "2026-06-11T09:15:00" },
             { id: 1603, userId: 1, title: "Hệ thống bảo trì", content: "AI Gateway sẽ bảo trì nâng cấp model RAG vào 24h đêm nay.", isRead: true, createdAt: "2026-06-10T14:00:00" }
           ],
           page: params?.page || 0,

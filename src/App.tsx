@@ -17,6 +17,8 @@ import CommunityPage    from "./pages/CommunityPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage      from "./pages/ProfilePage";
 import AdminPage        from "./pages/AdminPage";
+import NotFoundPage     from "./pages/NotFoundPage";
+import SharedDocumentPage from "./pages/SharedDocumentPage";
 
 const TAB_PATHS = [
   "/dashboard",
@@ -37,19 +39,41 @@ export default function App() {
   const [showLoginPanel, setShowLoginPanel] = useState<boolean>(false);
   const [userEmail,      setUserEmail]      = useState<string>("");
   const [activeTab,      setActiveTab]      = useState<number>(0);
+  const [is404,          setIs404]          = useState<boolean>(false);
+  const [shareToken,     setShareToken]     = useState<string | null>(null);
 
   // Sync state with URL (Routing)
   useEffect(() => {
     const handleLocation = () => {
       const path = window.location.pathname;
+      
+      // Check for share link route first
+      if (path.startsWith("/share/documents/")) {
+        const token = path.split("/share/documents/")[1];
+        if (token) {
+          setShareToken(token);
+          setShowLoginPanel(false);
+          setIs404(false);
+          setIsLoading(false); // Stop loading immediately for public page
+          return;
+        }
+      } else {
+        setShareToken(null);
+      }
+
       if (path === "/login") {
         setShowLoginPanel(true);
+        setIs404(false);
       } else if (path === "/" || path === "") {
         setShowLoginPanel(false);
+        setIs404(false);
       } else {
         const idx = TAB_PATHS.indexOf(path);
         if (idx !== -1) {
           setActiveTab(idx);
+          setIs404(false);
+        } else {
+          setIs404(true);
         }
       }
     };
@@ -61,6 +85,7 @@ export default function App() {
 
   const handleTabChange = (id: number) => {
     setActiveTab(id);
+    setIs404(false);
     const path = TAB_PATHS[id] || "/dashboard";
     if (window.location.pathname !== path) {
       window.history.pushState({}, "", path);
@@ -69,11 +94,13 @@ export default function App() {
 
   const navigateToLogin = () => {
     setShowLoginPanel(true);
+    setIs404(false);
     window.history.pushState({}, "", "/login");
   };
 
   const navigateToLanding = () => {
     setShowLoginPanel(false);
+    setIs404(false);
     window.history.pushState({}, "", "/");
   };
 
@@ -85,9 +112,8 @@ export default function App() {
     if (savedState === "true") {
       setIsLoggedIn(true);
       if (savedEmail) setUserEmail(savedEmail);
-
-      const timer = setTimeout(() => setIsLoading(false), 2000);
-      return () => clearTimeout(timer);
+      // F5 thì vào thẳng luôn, không hiện Loader 2s nữa
+      setIsLoading(false);
     } else {
       setIsLoading(false);
     }
@@ -137,6 +163,25 @@ export default function App() {
 
   // ── Loader screen ──
   if (isLoading) return <Loader />;
+
+  // ── 404 Not Found screen ──
+  if (is404) {
+    return (
+      <NotFoundPage 
+        onNavigateHome={() => {
+          setIs404(false);
+          window.history.pushState({}, "", "/");
+          // reload softly by routing mechanism, or hard reload:
+          window.location.href = "/";
+        }} 
+      />
+    );
+  }
+
+  // ── Public Shared Document screen ──
+  if (shareToken) {
+    return <SharedDocumentPage shareToken={shareToken} />;
+  }
 
   // ── Main App (đã đăng nhập) ──
   if (isLoggedIn) {
