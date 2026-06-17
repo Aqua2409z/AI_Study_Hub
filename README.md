@@ -54,7 +54,7 @@ Dưới đây là danh sách các công nghệ (Tech Stack) được sử dụng
 
 ###  Styling & UI System
 * **Tailwind CSS v4**: Thư viện Utility-first CSS thế hệ thứ 4.
-  * **Định lượng**: Tiết kiệm khoảng **70%** thời gian viết mã CSS thuần, tự động loại bỏ CSS thừa (Purge) giúp file CSS build ra thường nhỏ hơn **10KB** (Nguồn: Tailwind Labs).
+  * **Định lượng**: Tiết kiệm khoảng **70%** thời gian viết mã CSS thuần, tự động loại bỏ CSS thừa (Purge) giúp file CSS build ra thường nhỏ hơn **10KB** (Nguồn: Tailwind Labs). https://v3.tailwindcss.com/docs/optimizing-for-production#basic-usage
 * **Shadcn UI (v4.11) & Radix UI**: Hệ thống components Unstyled nhưng có khả năng truy cập (Accessibility) xuất sắc.
   * **Tại sao?**: Thay vì bị gò bó bởi Material UI hay Ant Design, Shadcn UI cho phép copy-paste logic component và tự do định kiểu với Tailwind. Tuân thủ **100% WAI-ARIA** standard. Cấu trúc Component được quản lý thông qua **`class-variance-authority` (cva)** & `clsx`.
 
