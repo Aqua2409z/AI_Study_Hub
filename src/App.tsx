@@ -20,6 +20,9 @@ import AdminPage        from "./pages/AdminPage";
 import NotFoundPage     from "./pages/NotFoundPage";
 import SharedDocumentPage from "./pages/SharedDocumentPage";
 
+// 🌟 DÒNG THÊM MỚI: Import trang Privacy Policy (Hãy chỉnh lại đường dẫn file nếu bạn lưu chỗ khác nhé)
+import PrivacyPolicy    from "./components/LoginPage/Loader/PrivacyPolicy"; 
+
 const TAB_PATHS = [
   "/dashboard",
   "/notebooks",
@@ -64,7 +67,9 @@ export default function App() {
       if (path === "/login") {
         setShowLoginPanel(true);
         setIs404(false);
-      } else if (path === "/" || path === "") {
+      } 
+      // 🌟 ĐÃ SỬA: Thêm "path === '/privacy-policy'" vào đây để cấu trúc router chấp nhận đường dẫn này hợp lệ
+      else if (path === "/" || path === "" || path === "/privacy-policy") {
         setShowLoginPanel(false);
         setIs404(false);
       } else {
@@ -112,7 +117,6 @@ export default function App() {
     if (savedState === "true") {
       setIsLoggedIn(true);
       if (savedEmail) setUserEmail(savedEmail);
-      // F5 thì vào thẳng luôn, không hiện Loader 2s nữa
       setIsLoading(false);
     } else {
       setIsLoading(false);
@@ -171,7 +175,6 @@ export default function App() {
         onNavigateHome={() => {
           setIs404(false);
           window.history.pushState({}, "", "/");
-          // reload softly by routing mechanism, or hard reload:
           window.location.href = "/";
         }} 
       />
@@ -183,7 +186,20 @@ export default function App() {
     return <SharedDocumentPage shareToken={shareToken} />;
   }
 
-  // ── Main App (đã đăng nhập) ──
+  // ── 🌟 THÊM MỚI: Trang Privacy Policy dành riêng cho trường hợp ĐÃ ĐĂNG NHẬP ──
+  // (Nếu họ đang ở trong hệ thống mà gõ /privacy-policy thì hiện thẳng giao diện này ra)
+  if (isLoggedIn && window.location.pathname === "/privacy-policy") {
+    return (
+      <PrivacyPolicy 
+        onBackClick={() => {
+          window.history.pushState({}, "", "/dashboard");
+          window.dispatchEvent(new Event("popstate")); // Ép hệ thống định tuyến cập nhật lại tab dashboard
+        }} 
+      />
+    );
+  }
+
+  // ── Main App (đã đăng nhập các trang thông thường) ──
   if (isLoggedIn) {
     return (
       <AppShell activeTab={activeTab} setActiveTab={handleTabChange}>
@@ -192,7 +208,7 @@ export default function App() {
     );
   }
 
-  // ── Landing / Login screen ──
+  // ── Landing / Login screen (Gồm cả trạng thái /privacy-policy khi chưa đăng nhập) ──
   return (
     <div className="flex w-screen h-screen overflow-hidden bg-space relative">
       {!showLoginPanel ? (

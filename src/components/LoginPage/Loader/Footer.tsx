@@ -152,22 +152,36 @@ export function Footer() {
       </div>
 
       {/* Chữ lớn MIND SPACE dưới cùng */}
-      <div className="relative z-10 w-full overflow-hidden leading-none">
+       <div className="relative z-10 w-full overflow-hidden leading-none">
+
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-neon/8 to-transparent pointer-events-none" />
+
         <p
-          className="text-center select-none"
+
+          className="font-grotesk font-black uppercase text-center select-none"
+
           style={{
-            fontFamily: "'Anton', sans-serif",
+
             fontSize: "clamp(80px, 18vw, 280px)",
+
             lineHeight: 1,
+
             letterSpacing: "-0.01em",
+
             color: "transparent",
+
             WebkitTextStroke: "1.5px rgba(245,242,234,0.10)",
+
             paddingBottom: "0.04em",
+
           }}
+
         >
+
           MIND SPACE
+
         </p>
+
       </div>
 
       {/* ── 🎯 POPUP THÔNG BÁO THÀNH CÔNG ── */}

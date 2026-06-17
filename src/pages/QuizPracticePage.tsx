@@ -71,7 +71,7 @@ export default function QuizPracticePage({ quizId, onBack }: QuizPracticePagePro
         if (res.success) {
           // Fetch detailed results
           const resultRes = await quizService.getTestResult(testSession.id);
-          if (resultRes.success) {
+          if (resultRes.success && resultRes.data) {
             setTestResult(resultRes.data);
             setDone(true);
           }
