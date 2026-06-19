@@ -1,3 +1,5 @@
+"use client";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { BookMarked, Plus, Search, Filter, Trash2, X } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
@@ -7,11 +9,12 @@ import { Notify } from "notiflix";
 
 const subjects = ["Tất cả", "SWP391", "SWT301", "SWR302", "PRN221", "PRJ301"];
 
-interface NotebooksPageProps {
-  onNavigate?: (tab: number) => void;
-}
+// Removed NotebooksPageProps
 
-export default function NotebooksPage({ onNavigate }: NotebooksPageProps) {
+import { useNavigate } from "react-router-dom";
+
+export default function NotebooksPage() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState("Tất cả");
   const [activeNotebook, setActiveNotebook] = useState<NotebookDTO | null>(null);
@@ -87,7 +90,6 @@ export default function NotebooksPage({ onNavigate }: NotebooksPageProps) {
       <NotebookDetailPage
         notebook={activeNotebook}
         onBack={() => setActiveNotebook(null)}
-        onNavigate={onNavigate ?? (() => {})}
       />
     );
   }
@@ -152,34 +154,51 @@ export default function NotebooksPage({ onNavigate }: NotebooksPageProps) {
               >
                 <div
                   onClick={() => setActiveNotebook(nb)}
-                  className="block surface-card p-5 transition-shadow h-full cursor-pointer hover:shadow-md hover:border-primary/30 relative group"
+                  className="block surface-card p-5 transition-shadow h-full cursor-pointer hover:shadow-md hover:border-primary/30 relative group overflow-hidden flex flex-col justify-between"
                 >
-                  <button 
-                    onClick={(e) => handleDelete(nb.id, e)}
-                    className="absolute top-3 right-3 p-1.5 rounded-lg bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                  <div className="flex items-start justify-between mb-4">
-                    <div
-                      className="size-12 rounded-2xl grid place-items-center"
-                      style={{
-                        background: `oklch(0.55 0.14 ${nb.color || "200"} / 0.15)`,
-                        color: `oklch(0.45 0.14 ${nb.color || "200"})`,
-                      }}
-                    >
-                      <BookMarked size={20} />
+                  <div>
+                    {/* Hàng 1: Icon & Nút Xóa */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div
+                        className="size-11 rounded-xl grid place-items-center"
+                        style={{
+                          background: `oklch(0.55 0.14 ${nb.color || "200"} / 0.15)`,
+                          color: `oklch(0.45 0.14 ${nb.color || "200"})`,
+                        }}
+                      >
+                        <BookMarked size={18} />
+                      </div>
+                      <button 
+                        onClick={(e) => handleDelete(nb.id, e)}
+                        className="p-1.5 rounded-lg bg-destructive/10 text-destructive opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 hover:bg-destructive hover:text-destructive-foreground pointer-events-none group-hover:pointer-events-auto"
+                        title="Xóa Notebook"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
-                    <span className="text-xs px-2 py-1 rounded-md bg-muted font-medium">{nb.subjectCode}</span>
+                    
+                    {/* Hàng 2: Cụm Tags Phân Loại Song Song */}
+                    <div className="flex items-center justify-between mb-3 text-[11px] font-semibold tracking-wide">
+                      <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary uppercase">
+                        {nb.id % 3 === 0 ? "Quiz" : nb.id % 3 === 1 ? "Documents" : "Flashcards"}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground uppercase">
+                        {nb.subjectCode}
+                      </span>
+                    </div>
+                    
+                    {/* Hàng 3: Tiêu Đề */}
+                    <div className="font-display text-lg font-semibold leading-snug mb-4">{nb.title}</div>
                   </div>
-                  <div className="font-display text-lg font-semibold leading-snug">{nb.title}</div>
-                  <div className="mt-3 grid grid-cols-1 gap-2 text-center">
-                    <div className="bg-muted/50 rounded-lg py-2">
+                  
+                  {/* Khối Thống Kê & Ngày tháng dưới chân */}
+                  <div className="space-y-2.5">
+                    <div className="bg-muted/50 rounded-lg py-2 text-center">
                       <div className="text-sm font-bold">{nb.documentCount}</div>
                       <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Tài liệu</div>
                     </div>
+                    <div className="text-[11px] text-muted-foreground">Cập nhật: {new Date(nb.createdAt).toLocaleDateString()}</div>
                   </div>
-                  <div className="mt-3 text-xs text-muted-foreground">Cập nhật: {new Date(nb.createdAt).toLocaleDateString()}</div>
                 </div>
               </motion.div>
             ))

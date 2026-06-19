@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { Compass, Home, Rocket } from "lucide-react";
 
-interface NotFoundPageProps {
-  onNavigateHome: () => void;
-}
+// Removed NotFoundPageProps
 
-export default function NotFoundPage({ onNavigateHome }: NotFoundPageProps) {
+import { useNavigate } from "react-router-dom";
+
+export default function NotFoundPage() {
+  const navigate = useNavigate();
   return (
     <div className="w-screen h-screen flex flex-col items-center justify-center bg-space text-cream overflow-hidden relative app-shell-font">
       {/* Background glowing effects */}
@@ -52,7 +53,7 @@ export default function NotFoundPage({ onNavigateHome }: NotFoundPageProps) {
 
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
           <button
-            onClick={onNavigateHome}
+            onClick={() => navigate("/")}
             className="group relative inline-flex items-center justify-center gap-2 px-8 h-14 rounded-2xl bg-primary text-primary-foreground text-base font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 w-full sm:w-auto"
           >
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />

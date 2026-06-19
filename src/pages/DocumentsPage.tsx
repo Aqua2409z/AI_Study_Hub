@@ -62,9 +62,9 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  {/* 🌟 HÀM DÙNG CHUNG: Xử lý vòng lặp upload danh sách File nhận vào */}
+  const processFilesUpload = async (files: FileList) => {
+    if (files.length === 0) return;
     
     setIsUploading(true);
     try {
@@ -81,6 +81,23 @@ export default function DocumentsPage() {
     } finally {
       setIsUploading(false);
       if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  {/* Xử lý khi chọn file bằng cửa sổ File Explorer (Click) */}
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) await processFilesUpload(files);
+  };
+
+  {/* 🌟 HÀM MỚI THÊM: Xử lý trích xuất danh sách file khi người dùng THẢ CHUỘT (Drop) */}
+  const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDrag(false);
+    
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      await processFilesUpload(files);
     }
   };
 
@@ -191,7 +208,7 @@ export default function DocumentsPage() {
         <p className="text-muted-foreground mt-1">Tải lên, sắp xếp và tìm kiếm tài liệu học tập.</p>
       </div>
 
-      {/* Uploader */}
+      {/* Uploader (Khung kéo thả) */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -200,20 +217,24 @@ export default function DocumentsPage() {
           setDrag(true);
         }}
         onDragLeave={() => setDrag(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDrag(false);
-        }}
-        onClick={() => inputRef.current?.click()}
+
+        onDrop={handleFileDrop}
+        onClick={() => !isUploading && inputRef.current?.click()}
         className={`surface-card border-2 border-dashed p-8 text-center cursor-pointer transition-all ${
-          drag ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+          drag ? "border-primary bg-primary/5 scale-[1.01]" : "border-border hover:border-primary/50"
         } ${isUploading ? "opacity-50 pointer-events-none" : ""}`}
       >
         <input ref={inputRef} type="file" multiple className="hidden" onChange={handleFileUpload} />
         <div className="size-14 mx-auto mb-3 rounded-2xl bg-primary/10 text-primary grid place-items-center">
-          <Upload size={24} />
+          {isUploading ? (
+            <div className="size-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Upload size={24} />
+          )}
         </div>
-        <div className="font-display text-lg font-semibold">Kéo & thả tài liệu vào đây</div>
+        <div className="font-display text-lg font-semibold">
+          {isUploading ? "Đang xử lý tải tài liệu lên..." : "Kéo & thả tài liệu vào đây"}
+        </div>
         <div className="text-sm text-muted-foreground mt-1">
           PDF, DOCX, PPTX, TXT · tối đa 50MB / file
         </div>
@@ -251,7 +272,7 @@ export default function DocumentsPage() {
       </div>
 
       {/* Table List */}
-      <div className="surface-card overflow-hidden border border-border/40 shadow-sm">
+      <div className="surface-card overflow-x-auto no-scrollbar border border-border/40 shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-xs uppercase text-muted-foreground tracking-wider border-b border-border/50">
             <tr>
@@ -274,7 +295,6 @@ export default function DocumentsPage() {
               >
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
-                    {/* 🤖 ĐỔI MÀU BADGE FILE THEO ĐÚNG ĐỊNH DẠNG THỰC TẾ */}
                     <div className={`size-9 rounded-xl grid place-items-center text-[10px] font-extrabold uppercase border transition-colors duration-300 ${
                       typeStyles[d.fileType.toLowerCase()]?.badge || "bg-muted text-muted-foreground border-transparent"
                     }`}>

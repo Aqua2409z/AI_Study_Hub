@@ -321,7 +321,7 @@ export default function OrbisLanding({ onLoginClick }: { onLoginClick: () => voi
   };
 
   return (
-    <div className="bg-space text-cream font-mono select-none selection:bg-neon selection:text-space relative perspective-1000 overflow-hidden">
+    <div id="orbis-scroll-wrapper" className="bg-space text-cream font-mono select-none selection:bg-neon selection:text-space relative perspective-1000 overflow-x-hidden overflow-y-auto h-screen w-screen no-scrollbar">
       <TopMarqueeBanner />
 
       {/* FLOATING VIDEO CONTROLLER */}

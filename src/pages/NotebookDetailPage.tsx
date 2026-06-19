@@ -8,10 +8,12 @@ import { Notify } from "notiflix";
 interface NotebookDetailPageProps {
   notebook: NotebookDTO;
   onBack: () => void;
-  onNavigate: (tab: number) => void;
 }
 
-export default function NotebookDetailPage({ notebook: initialNotebook, onBack, onNavigate }: NotebookDetailPageProps) {
+import { useNavigate } from "react-router-dom";
+
+export default function NotebookDetailPage({ notebook: initialNotebook, onBack }: NotebookDetailPageProps) {
+  const navigate = useNavigate();
   const nbDocs = documents.slice(0, 4);
   const [notebook, setNotebook] = useState<NotebookDTO>(initialNotebook);
   
@@ -72,13 +74,13 @@ export default function NotebookDetailPage({ notebook: initialNotebook, onBack, 
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <button
-            onClick={() => onNavigate(3)}
+            onClick={() => navigate("/chat")}
             className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
           >
             <Bot size={16} /> Hỏi AI trong notebook
           </button>
           <button
-            onClick={() => onNavigate(2)}
+            onClick={() => navigate("/documents")}
             className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl bg-card border border-border text-sm font-medium hover:bg-muted"
           >
             <Plus size={16} /> Thêm tài liệu
@@ -92,7 +94,7 @@ export default function NotebookDetailPage({ notebook: initialNotebook, onBack, 
             <h2 className="font-display text-lg font-semibold flex items-center gap-2">
               <FileText size={18} className="text-primary" /> Tài liệu ({notebook.documentCount})
             </h2>
-            <button onClick={() => onNavigate(2)} className="text-sm text-primary">
+            <button onClick={() => navigate("/documents")} className="text-sm text-primary">
               Tất cả →
             </button>
           </div>
@@ -125,7 +127,7 @@ export default function NotebookDetailPage({ notebook: initialNotebook, onBack, 
               {quizzes.slice(0, 2).map((q) => (
                 <li key={q.id}>
                   <button
-                    onClick={() => onNavigate(4)}
+                    onClick={() => navigate("/quiz")}
                     className="w-full text-left block p-3 rounded-lg bg-muted/50 hover:bg-muted"
                   >
                     <div className="text-sm font-medium">{q.title}</div>
@@ -144,7 +146,7 @@ export default function NotebookDetailPage({ notebook: initialNotebook, onBack, 
               {decks.slice(0, 2).map((d) => (
                 <li key={d.id}>
                   <button
-                    onClick={() => onNavigate(5)}
+                    onClick={() => navigate("/flashcards")}
                     className="w-full text-left block p-3 rounded-lg bg-muted/50 hover:bg-muted"
                   >
                     <div className="text-sm font-medium">{d.title}</div>

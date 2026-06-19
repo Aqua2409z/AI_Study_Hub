@@ -214,9 +214,9 @@ export default function ChatPage() {
   });
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] max-w-6xl mx-auto gap-6">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-8rem)] max-w-6xl mx-auto gap-6">
       {/* ── SIDEBAR LỊCH SỬ CHAT ── */}
-      <div className="w-72 shrink-0 flex flex-col gap-4">
+      <div className="w-full md:w-72 shrink-0 flex flex-col gap-4 max-h-[30vh] md:max-h-full">
         <button
           onClick={createSession}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:brightness-110 active:scale-95 transition-all shadow-sm cursor-pointer"
@@ -422,6 +422,10 @@ export default function ChatPage() {
                         {m.content}
                       </div>
                     )}
+                    
+                    <span className="text-[10px] text-muted-foreground mt-0.5 px-1 opacity-70">
+                      {new Date(m.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })}
+                    </span>
 
                     {m.citedSources && m.citedSources.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-1">

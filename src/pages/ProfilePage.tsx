@@ -128,7 +128,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
       }
       if (testsRes.success && testsRes.data) setTestHistory(testsRes.data.items || []);
       if (logsRes.success && logsRes.data) setActivityLogs(logsRes.data.items || []);
-      if (aiRes.success && aiRes.data) setAiUsage(aiRes.data.items?.[0] || null);
+      if (aiRes.success && aiRes.data) setAiUsage(aiRes.data);
       if (refRes?.success && refRes.data) setMyReferral(refRes.data);
       if (rolesRes?.success && rolesRes.data) setMyRoles(rolesRes.data);
 
@@ -298,7 +298,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
 
       {/* Banner Card */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="surface-card gradient-hero p-6 lg:p-8 relative overflow-hidden">
-        <div className="flex flex-col md:flex-row gap-6 items-start md:items-center relative z-10">
+        <div className="flex flex-col md:flex-row gap-6 items-center md:items-center relative z-10">
           <div className="size-24 rounded-3xl bg-ink text-cream grid place-items-center text-3xl font-display font-bold shadow-inner overflow-hidden shrink-0 border border-white/10">
             {userInfo.avatarUrl ? (
               <img src={userInfo.avatarUrl} alt={userInfo.fullName} className="w-full h-full object-cover" />
@@ -307,7 +307,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
             )}
           </div>
 
-          <div className="flex-1 text-left">
+          <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">{userInfo.fullName}</h1>
               <span className="text-xs px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-semibold tracking-wider">

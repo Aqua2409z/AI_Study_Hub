@@ -2,10 +2,12 @@ import { FormEvent, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, X, Twitter, Github } from "lucide-react";
 import PrivacyPolicy from "./PrivacyPolicy";
+import CookieSettings from "./CookieSettings";
 
 export function Footer() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showCookie, setShowCookie] = useState(false);
   const [email, setEmail] = useState("");
 
   // ─── 🌟 XỬ LÝ ĐỒNG BỘ URL THÔNG MINH ───
@@ -24,20 +26,28 @@ export function Footer() {
     }
   };
 
+  const openCookie = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setShowCookie(true);
+    window.history.pushState({ cookieOpen: true }, "", "/cookie-settings");
+  };
+
+  const closeCookie = () => {
+    setShowCookie(false);
+    if (window.location.pathname === "/cookie-settings") {
+      window.history.back();
+    }
+  };
+
   // Lắng nghe sự kiện người dùng bấm nút BACK/FORWARD của chính trình duyệt
   useEffect(() => {
     const handlePopState = () => {
-      if (window.location.pathname === "/privacy-policy") {
-        setShowPrivacy(true);
-      } else {
-        setShowPrivacy(false);
-      }
+      setShowPrivacy(window.location.pathname === "/privacy-policy");
+      setShowCookie(window.location.pathname === "/cookie-settings");
     };
 
-    // Kiểm tra ngay khi vào trang xem URL có sẵn /privacy-policy không để mở luôn
-    if (window.location.pathname === "/privacy-policy") {
-      setShowPrivacy(true);
-    }
+    if (window.location.pathname === "/privacy-policy") setShowPrivacy(true);
+    if (window.location.pathname === "/cookie-settings") setShowCookie(true);
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -120,23 +130,27 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Các đường dẫn điều khoản */}
         <div className="flex items-center gap-6 flex-wrap justify-center">
-          {["Privacy Policy", "Cookie Settings", "API Docs", "Github Repo"].map((link, i) => (
-            <a 
-              key={i} 
-              href={link === "Privacy Policy" ? "/privacy-policy" : "#"} 
-              onClick={(e) => {
-                if (link === "Privacy Policy") {
-                  openPrivacy(e);
-                }
-              }}
-              style={antonStyle}
-              className="text-[12px] text-cream/30 hover:text-cream/70 transition-colors cursor-pointer"
-            >
-              {link}
-            </a>
-          ))}
+          {["Privacy Policy", "Cookie Settings", "API Docs", "Github Repo"].map((link, i) => {
+            let targetUrl = "#";
+            if (link === "Privacy Policy") targetUrl = "/privacy-policy";
+            if (link === "Cookie Settings") targetUrl = "/cookie-settings";
+            
+            return (
+              <a 
+                key={i} 
+                href={targetUrl} 
+                onClick={(e) => {
+                  if (link === "Privacy Policy") openPrivacy(e);
+                  if (link === "Cookie Settings") openCookie(e);
+                }}
+                style={antonStyle}
+                className="text-[12px] text-cream/30 hover:text-cream/70 transition-colors cursor-pointer"
+              >
+                {link}
+              </a>
+            );
+          })}
         </div>
 
         <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -262,6 +276,23 @@ export function Footer() {
           >
             {/* Truyền hàm closePrivacy vào onBackClick thay vì chỉ set trạng thái */}
             <PrivacyPolicy onBackClick={closePrivacy} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── 🎯 POPUP TRƯỢT TRANG COOKIE SETTINGS TOÀN MÀN HÌNH ── */}
+      <AnimatePresence>
+        {showCookie && (
+          <motion.div 
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "tween", duration: 0.4, ease: "easeInOut" }}
+            className="fixed inset-0 z-50 h-screen w-screen overflow-y-auto bg-[#020514] no-scrollbar"
+            data-lenis-prevent="true"
+            style={{ touchAction: "pan-y" }}
+          >
+            <CookieSettings onBackClick={closeCookie} />
           </motion.div>
         )}
       </AnimatePresence>

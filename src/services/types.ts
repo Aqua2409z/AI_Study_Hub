@@ -22,6 +22,13 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data: T;
+  error?: any;
+}
+
 // ─── PHÂN HỆ ACADEMIC MASTER DATA ───────────────────────────────────────────
 export interface ComboDTO {
   id: number;

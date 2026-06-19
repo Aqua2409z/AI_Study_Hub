@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState, Suspense, lazy } from "react";
-import { createPortal } from "react-dom";
 import gsap from "gsap";
 import {
   BookMarked,
@@ -17,7 +16,9 @@ import {
   Trophy,
   X,
   Medal,
-  Crown
+  Crown,
+  TrendingDown,
+  Gem
 } from "lucide-react";
 import {
   BarChart,
@@ -27,20 +28,15 @@ import {
   Tooltip,
   Cell,
 } from "recharts";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { notebooks, notifications, leaderboard, decks } from "../lib/mock-data";
 
 const Spline = lazy(() => import("@splinetool/react-spline"));
 
-interface DashboardPageProps {
-  onNavigate: (tab: number) => void;
-}
+// Removed DashboardPageProps
 
-const stats = [
-  { label: "Notebook", value: 5, icon: BookMarked, tint: "165" },
-  { label: "Tài liệu", value: 42, icon: FileText, tint: "200" },
-  { label: "Lượt hỏi AI", value: 128, icon: Bot, tint: "35" },
-  { label: "Dung lượng", value: "1.2 GB", icon: HardDrive, tint: "75" },
-];
+// stats array is moved inside the component to use `t`
 
 const weekActivity = [
   { d: "T2", v: 12 },
@@ -55,19 +51,31 @@ const weekActivity = [
 // Giả lập dữ liệu mở rộng cho 3 mục đóng góp bên trong Hộp thoại Popup công thần
 const mockContributions = {
   weekly: [
-    { rank: 1, name: "Lê Trần Anh Khoa", points: 2450, avatar: "AK", desc: "Mới upload 5 đề cương mạch ESP32" },
-    { rank: 2, name: "Ngô Nhựt Minh", points: 2100, avatar: "NM", desc: "Đóng góp 3 bộ câu hỏi test JSTL" },
-    { rank: 3, name: "Trần Bích Trâm", points: 1850, avatar: "BT", desc: "Hoàn thiện 40 thẻ ôn tập Scrum" },
+    { rank: 1, name: "Ngô Nhựt Minh", points: 65322, avatar: "NM", trending: "up" },
+    { rank: 2, name: "Lê Trần Anh Khoa", points: 48105, avatar: "AK", trending: "up" },
+    { rank: 3, name: "Trần Bích Trâm", points: 21780, avatar: "BT", trending: "down" },
+    { rank: 4, name: "Brody Bennet", points: 19231, avatar: "B", trending: "up" },
+    { rank: 5, name: "Anna Doe", points: 15322, avatar: "A", trending: "down" },
+    { rank: 6, name: "Sam Kim", points: 15101, avatar: "S", trending: "up" },
+    { rank: 7, name: "Lia Park", points: 12344, avatar: "L", trending: "down" },
   ],
   monthly: [
-    { rank: 1, name: "Ngô Nhựt Minh", points: 9800, avatar: "NM", desc: "Chiến thần chia sẻ lab Java Web tháng này" },
-    { rank: 2, name: "Lê Trần Anh Khoa", points: 8400, avatar: "AK", desc: "Tích cực hỗ trợ giải đáp bài học bằng AI" },
-    { rank: 3, name: "Trần Bích Trâm", points: 7200, avatar: "BT", desc: "Đóng góp kho sơ đồ Use Case chất lượng cao" },
+    { rank: 1, name: "Ngô Nhựt Minh", points: 98000, avatar: "NM", trending: "up" },
+    { rank: 2, name: "Lê Trần Anh Khoa", points: 84000, avatar: "AK", trending: "up" },
+    { rank: 3, name: "Trần Bích Trâm", points: 72000, avatar: "BT", trending: "up" },
+    { rank: 4, name: "Brody Bennet", points: 59231, avatar: "B", trending: "up" },
+    { rank: 5, name: "Anna Doe", points: 45322, avatar: "A", trending: "down" },
+    { rank: 6, name: "Sam Kim", points: 35101, avatar: "S", trending: "down" },
+    { rank: 7, name: "Lia Park", points: 22344, avatar: "L", trending: "down" },
   ],
   allTime: [
-    { rank: 1, name: "Trần Bích Trâm", points: 45200, avatar: "BT", desc: "Huyền thoại đóng góp tài liệu thư viện trường" },
-    { rank: 2, name: "Ngô Nhựt Minh", points: 41800, avatar: "NM", desc: "Đại công thần tối ưu hóa học liệu thông minh" },
-    { rank: 3, name: "Lê Trần Anh Khoa", points: 39500, avatar: "AK", desc: "Top 3 thủ khoa tích điểm danh tiếng hệ thống" },
+    { rank: 1, name: "Trần Bích Trâm", points: 452000, avatar: "BT", trending: "up" },
+    { rank: 2, name: "Ngô Nhựt Minh", points: 418000, avatar: "NM", trending: "up" },
+    { rank: 3, name: "Lê Trần Anh Khoa", points: 395000, avatar: "AK", trending: "up" },
+    { rank: 4, name: "Brody Bennet", points: 219231, avatar: "B", trending: "down" },
+    { rank: 5, name: "Anna Doe", points: 185322, avatar: "A", trending: "up" },
+    { rank: 6, name: "Sam Kim", points: 165101, avatar: "S", trending: "up" },
+    { rank: 7, name: "Lia Park", points: 142344, avatar: "L", trending: "down" },
   ]
 };
 
@@ -97,12 +105,21 @@ function CountUp({ value }: { value: string | number }) {
   return <span ref={ref}>0</span>;
 }
 
-export default function DashboardPage({ onNavigate }: DashboardPageProps) {
+export default function DashboardPage() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [isSplineReady, setIsSplineReady] = useState(false);
 
   // ── 🛠️ STATE ĐIỀU KHIỂN ĐÓNG MỞ MODAL & CHỌN 1 TRONG 3 MỤC ĐÓNG GÓP ──
   const [isContributorOpen, setIsContributorOpen] = useState(false);
   const [activeContribTab, setActiveContributorTab] = useState<"weekly" | "monthly" | "allTime">("weekly");
+
+  const stats = [
+    { label: t("dashboard.stats.notebook"), value: 5, icon: BookMarked, tint: "165" },
+    { label: t("dashboard.stats.document"), value: 42, icon: FileText, tint: "200" },
+    { label: t("dashboard.stats.aiQuery"), value: 128, icon: Bot, tint: "35" },
+    { label: t("dashboard.stats.storage"), value: "1.2 GB", icon: HardDrive, tint: "75" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -114,27 +131,27 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       >
         <div className="flex-1 min-w-0 z-10 relative pointer-events-auto md:pr-[160px] text-left">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-            <Flame size={12} fill="currentColor" /> Chuỗi học 7 ngày liên tiếp
+            <Flame size={12} fill="currentColor" /> {t("dashboard.hero.streak")}
           </div>
           <h1 className="mt-3 text-3xl lg:text-4xl font-bold">
-            Chào Khoa, hôm nay học gì nhỉ?
+            {t("dashboard.hero.greeting")}
           </h1>
           <p className="mt-2 text-muted-foreground max-w-xl">
-            Bạn còn <strong className="text-foreground font-semibold">3 quiz</strong> chưa hoàn thành và{" "}
-            <strong className="text-foreground font-semibold">12 flashcard</strong> cần ôn lại trong tuần này.
+            {t("dashboard.hero.desc1")}<strong className="text-foreground font-semibold">3 quiz</strong>{t("dashboard.hero.desc2")}
+            <strong className="text-foreground font-semibold">12 flashcard</strong>{t("dashboard.hero.desc3")}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <button
-              onClick={() => onNavigate(3)}
+              onClick={() => navigate("/chat")}
               className="inline-flex items-center gap-1.5 px-5 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 shadow-sm transition-all cursor-pointer"
             >
-              <Bot size={16} /> Hỏi AI ngay
+              <Bot size={16} /> {t("dashboard.hero.askAI")}
             </button>
             <button
-              onClick={() => onNavigate(1)}
+              onClick={() => navigate("/notebooks")}
               className="inline-flex items-center gap-1.5 px-5 h-10 rounded-full bg-card border border-border text-sm font-medium hover:bg-muted shadow-sm transition-colors cursor-pointer"
             >
-              Mở Notebook <ArrowRight size={16} />
+              {t("dashboard.hero.openNotebook")} <ArrowRight size={16} />
             </button>
           </div>
         </div>
@@ -190,8 +207,8 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         <div className="surface-card p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-3">
             <div className="text-left">
-              <h3 className="font-display text-lg font-semibold">Hoạt động học tuần này</h3>
-              <p className="text-xs text-muted-foreground">Số lượt tương tác AI mỗi ngày</p>
+              <h3 className="font-display text-lg font-semibold">{t("dashboard.chart.title")}</h3>
+              <p className="text-xs text-muted-foreground">{t("dashboard.chart.subtitle")}</p>
             </div>
             <div className="inline-flex items-center gap-1 text-success text-sm font-medium">
               <TrendingUp size={14} /> +24%
@@ -220,37 +237,87 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           </div>
         </div>
 
-        {/* 🛠️ KHỐI TOP CONTRIBUTORS: Đã bọc nút click mở bung Modal con 3 mục */}
-        <div className="surface-card p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display text-lg font-semibold">Top contributors</h3>
-            <button 
+        <div className="surface-card p-5 pb-0 relative overflow-hidden" style={{ backgroundColor: "#fffaf0" }}>
+          {/* Sunburst Background */}
+          <div className="absolute top-0 left-0 right-0 h-full pointer-events-none opacity-[0.35]" style={{ background: "repeating-conic-gradient(from 0deg at 50% 100%, transparent 0deg 15deg, #fcd34d 15deg 30deg)" }} />
+
+          <div className="flex items-center justify-between mb-2 relative z-10">
+            <h3 className="font-display text-[17px] font-bold text-slate-800">{t("dashboard.leaderboard.title")}</h3>
+            <button
               onClick={() => setIsContributorOpen(true)}
-              className="text-xs text-primary font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
+              className="text-xs text-emerald-600 font-bold hover:underline inline-flex items-center gap-1.5 cursor-pointer bg-white/50 px-2 py-1 rounded-md"
             >
-              <Trophy size={14} className="text-coral" /> Chi tiết →
+              <Trophy size={14} className="text-coral" /> {t("dashboard.leaderboard.details")}
             </button>
           </div>
-          <ul className="space-y-3 cursor-pointer" onClick={() => setIsContributorOpen(true)}>
-            {leaderboard.map((u) => (
-              <li key={u.rank} className="flex items-center gap-3 group transition-all">
-                <div
-                  className={`size-7 rounded-full grid place-items-center text-xs font-bold ${
-                    u.rank === 1 ? "bg-coral text-white" : u.rank === 2 ? "bg-accent" : "bg-muted"
-                  }`}
-                >
-                  {u.rank}
+
+          <div className="relative pt-6 pb-0 flex items-end justify-center gap-2 z-10 min-h-[180px] cursor-pointer" onClick={() => setIsContributorOpen(true)}>
+            {/* Rank 2 */}
+            {mockContributions.weekly[1] && (() => {
+              const u = mockContributions.weekly[1];
+              return (
+                <div className="flex-1 flex flex-col items-center">
+                  <div className="size-10 rounded-full border-[2px] border-[#3b82f6] bg-white text-[#3b82f6] flex items-center justify-center text-sm font-black shadow-sm z-10 mb-1.5">
+                    {u.avatar}
+                  </div>
+                  <div className="w-full px-0.5 mb-1">
+                    <div className="text-[10px] font-bold text-slate-800 text-center leading-tight truncate">{u.name.split(" ").slice(-2).join(" ")}</div>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-bold mb-2 whitespace-nowrap">
+                    {u.points.toLocaleString()} {t("dashboard.leaderboard.pts")}
+                  </div>
+                  {/* Bục #2 */}
+                  <div className="w-full h-[85px] bg-[#f5b675] rounded-t-xl flex justify-center pt-2 shadow-[inset_0_4px_6px_rgba(255,255,255,0.4)] transition-transform hover:-translate-y-1">
+                    <span className="text-white/90 font-black text-xl drop-shadow-sm">#2</span>
+                  </div>
                 </div>
-                <div className="size-9 rounded-full bg-ink text-cream grid place-items-center text-xs font-semibold group-hover:scale-105 transition-transform">
-                  {u.avatar}
+              )
+            })()}
+
+            {/* Rank 1 */}
+            {mockContributions.weekly[0] && (() => {
+              const u = mockContributions.weekly[0];
+              return (
+                <div className="flex-[1.2] flex flex-col items-center">
+                  <div className="size-[50px] rounded-full border-[2px] border-[#22c55e] bg-white text-[#22c55e] flex items-center justify-center text-lg font-black shadow-md z-10 mb-1.5 relative">
+                    {u.avatar}
+                  </div>
+                  <div className="w-full px-0.5 mb-1">
+                    <div className="text-[11px] font-bold text-slate-800 text-center leading-tight truncate">{u.name.split(" ").slice(-2).join(" ")}</div>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-bold mb-2 whitespace-nowrap">
+                    {u.points.toLocaleString()} {t("dashboard.leaderboard.pts")}
+                  </div>
+                  {/* Bục #1 */}
+                  <div className="w-full h-[115px] bg-[#9bd16f] rounded-t-xl flex justify-center pt-2 shadow-[inset_0_4px_6px_rgba(255,255,255,0.4)] transition-transform hover:-translate-y-1">
+                    <span className="text-white font-black text-[26px] leading-none drop-shadow-sm">#1</span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="text-sm font-medium truncate group-hover:text-primary transition-colors">{u.name}</div>
-                  <div className="text-xs text-muted-foreground">{u.points.toLocaleString()} pts</div>
+              )
+            })()}
+
+            {/* Rank 3 */}
+            {mockContributions.weekly[2] && (() => {
+              const u = mockContributions.weekly[2];
+              return (
+                <div className="flex-1 flex flex-col items-center">
+                  <div className="size-10 rounded-full border-[2px] border-[#ef4444] bg-white text-[#ef4444] flex items-center justify-center text-sm font-black shadow-sm z-10 mb-1.5">
+                    {u.avatar}
+                  </div>
+                  <div className="w-full px-0.5 mb-1">
+                    <div className="text-[10px] font-bold text-slate-800 text-center leading-tight truncate">{u.name.split(" ").slice(-2).join(" ")}</div>
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-bold mb-2 whitespace-nowrap">
+                    {u.points.toLocaleString()} {t("dashboard.leaderboard.pts")}
+                  </div>
+                  {/* Bục #3 */}
+                  <div className="w-full h-[75px] bg-[#ec8c8b] rounded-t-xl flex justify-center pt-1.5 shadow-[inset_0_4px_6px_rgba(255,255,255,0.4)] transition-transform hover:-translate-y-1">
+                    <span className="text-white/90 font-black text-xl drop-shadow-sm">#3</span>
+                  </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+              )
+            })()}
+          </div>
         </div>
       </section>
 
@@ -258,9 +325,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       <section className="grid lg:grid-cols-3 gap-4">
         <div className="surface-card p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-semibold">Notebook gần đây</h3>
-            <button onClick={() => onNavigate(1)} className="text-sm text-primary font-medium cursor-pointer">
-              Xem tất cả →
+            <h3 className="font-display text-lg font-semibold">{t("dashboard.notebooks.recent")}</h3>
+            <button onClick={() => navigate("/notebooks")} className="text-sm text-primary font-medium cursor-pointer">
+              {t("dashboard.notebooks.viewAll")}
             </button>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -272,7 +339,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 transition={{ delay: i * 0.05 }}
                 whileHover={{ y: -2 }}
               >
-                <div onClick={() => onNavigate(1)} className="block p-4 rounded-xl border border-border hover:border-primary/40 hover:shadow-md transition-all bg-card cursor-pointer text-left">
+                <div onClick={() => navigate("/notebooks")} className="block p-4 rounded-xl border border-border hover:border-primary/40 hover:shadow-md transition-all bg-card cursor-pointer text-left">
                   <div
                     className="size-9 rounded-lg mb-3 grid place-items-center"
                     style={{ background: `oklch(0.55 0.14 ${nb.color} / 0.15)`, color: `oklch(0.45 0.14 ${nb.color})` }}
@@ -281,7 +348,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                   </div>
                   <div className="font-medium truncate">{nb.title}</div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {nb.docs} tài liệu · {nb.cards} thẻ · {nb.updated}
+                    {nb.docs} {t("dashboard.notebooks.docs")} · {nb.cards} {t("dashboard.notebooks.cards")} · {nb.updated}
                   </div>
                 </div>
               </motion.div>
@@ -291,9 +358,9 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
         <div className="surface-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-semibold">Thông báo mới</h3>
-            <button onClick={() => onNavigate(7)} className="text-sm text-primary font-medium cursor-pointer">
-              Tất cả →
+            <h3 className="font-display text-lg font-semibold">{t("dashboard.notifications.new")}</h3>
+            <button onClick={() => navigate("/notifications")} className="text-sm text-primary font-medium cursor-pointer">
+              {t("dashboard.notifications.viewAll")}
             </button>
           </div>
           <ul className="space-y-3 text-left">
@@ -315,10 +382,10 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         <div className="surface-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-lg font-semibold flex items-center gap-2">
-              <GraduationCap size={18} className="text-primary" /> Quiz cần làm
+              <GraduationCap size={18} className="text-primary" /> {t("dashboard.quiz.todo")}
             </h3>
-            <button onClick={() => onNavigate(4)} className="text-sm text-primary font-medium cursor-pointer">
-              Tất cả →
+            <button onClick={() => navigate("/quiz")} className="text-sm text-primary font-medium cursor-pointer">
+              {t("dashboard.quiz.viewAll")}
             </button>
           </div>
           <div className="space-y-2 text-left">
@@ -326,13 +393,13 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               <div key={nb.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
                 <div>
                   <div className="text-sm font-medium">{nb.title}</div>
-                  <div className="text-xs text-muted-foreground">{nb.quizzes} quiz · cấp độ Medium</div>
+                  <div className="text-xs text-muted-foreground">{nb.quizzes} {t("dashboard.quiz.quizzes")} · {t("dashboard.quiz.level")} Medium</div>
                 </div>
                 <button
-                  onClick={() => onNavigate(4)}
+                  onClick={() => navigate("/quiz")}
                   className="px-3 h-8 inline-flex items-center rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
                 >
-                  Làm bài
+                  {t("dashboard.quiz.doTest")}
                 </button>
               </div>
             ))}
@@ -342,10 +409,10 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         <div className="surface-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-lg font-semibold flex items-center gap-2">
-              <BookOpen size={18} className="text-coral" /> Flashcard mới
+              <BookOpen size={18} className="text-coral" /> {t("dashboard.flashcards.new")}
             </h3>
-            <button onClick={() => onNavigate(5)} className="text-sm text-primary font-medium cursor-pointer">
-              Tất cả →
+            <button onClick={() => navigate("/flashcards")} className="text-sm text-primary font-medium cursor-pointer">
+              {t("dashboard.flashcards.viewAll")}
             </button>
           </div>
           <div className="space-y-2 text-left">
@@ -354,14 +421,14 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 <div>
                   <div className="text-sm font-medium">{d.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {d.mastered}/{d.cards} đã thuộc · {d.updated}
+                    {d.mastered}/{d.cards} {t("dashboard.flashcards.mastered")} · {d.updated}
                   </div>
                 </div>
                 <button
-                  onClick={() => onNavigate(5)}
+                  onClick={() => navigate("/flashcards")}
                   className="px-3 h-8 inline-flex items-center rounded-lg bg-coral text-white text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
                 >
-                  Học
+                  {t("dashboard.flashcards.study")}
                 </button>
               </div>
             ))}
@@ -370,118 +437,159 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       </section>
 
       {/* ── 🏆 POPUP BẢNG VÀNG ĐÓNG GÓP 3 MỤC CHÍNH GIỮA MÀN HÌNH ── */}
-      {typeof document !== "undefined" ? createPortal(
-        <AnimatePresence>
-          {isContributorOpen && (
-            <>
-              {/* Lớp phủ mờ nền */}
+      <AnimatePresence>
+        {isContributorOpen && (
+          <>
+            {/* Lớp phủ mờ nền */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsContributorOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 cursor-default"
+            />
+
+            {/* Thùng chứa Modal */}
+            <div className="fixed inset-0 flex items-center justify-center p-4 z-50 pointer-events-none">
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsContributorOpen(false)}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] cursor-default"
-              />
+                initial={{ scale: 0.96, opacity: 0, y: 15 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.96, opacity: 0, y: 15 }}
+                transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                className="pointer-events-auto w-full max-w-md bg-[#fffaf0] border border-slate-200 shadow-2xl rounded-3xl flex flex-col max-h-[85vh] overflow-hidden text-left relative"
+              >
+                {/* Sunburst Background */}
+                <div className="absolute top-0 left-0 right-0 h-[450px] pointer-events-none opacity-[0.35]" style={{ background: "repeating-conic-gradient(from 0deg at 50% 100%, transparent 0deg 15deg, #fcd34d 15deg 30deg)" }} />
 
-              {/* Thùng chứa Modal */}
-              <div className="fixed inset-0 flex items-center justify-center p-4 z-[100] pointer-events-none">
-                <motion.div
-                  initial={{ scale: 0.96, opacity: 0, y: 15 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.96, opacity: 0, y: 15 }}
-                  transition={{ type: "spring", duration: 0.4 }}
-                  className="pointer-events-auto w-full max-w-md bg-card border border-border shadow-2xl rounded-2xl flex flex-col max-h-[80vh] overflow-hidden text-left"
+                {/* Close Button */}
+                <button
+                  onClick={() => setIsContributorOpen(false)}
+                  className="absolute -right-1 -top-1 md:right-4 md:top-4 z-50 grid h-8 w-8 place-items-center rounded-full bg-white text-slate-600 shadow-md transition hover:text-slate-900 hover:scale-105 cursor-pointer border border-slate-100"
                 >
-                  {/* Header Modal */}
-                  <div className="p-5 border-b border-border flex items-center justify-between bg-muted/10">
-                    <div className="flex items-center gap-2">
-                      <Crown className="text-coral size-5 animate-bounce" />
-                      <h3 className="text-base font-bold text-foreground">Bảng Vàng Đóng Góp</h3>
-                    </div>
+                  <X size={16} strokeWidth={2.5} />
+                </button>
+
+                <div className="pt-6 px-6 pb-2 relative z-20">
+                  <h2 className="text-[26px] font-black text-slate-900 tracking-tight">Leaderboard</h2>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex p-1.5 bg-white/60 backdrop-blur-md rounded-xl mx-5 mt-1 border border-slate-200/50 gap-1 shrink-0 z-20 relative shadow-sm">
+                  {[
+                    { id: "weekly", label: t("dashboard.leaderboard.weekly") },
+                    { id: "monthly", label: t("dashboard.leaderboard.monthly") },
+                    { id: "allTime", label: t("dashboard.leaderboard.allTime") }
+                  ].map((tab) => (
                     <button
-                      onClick={() => setIsContributorOpen(false)}
-                      className="size-8 rounded-lg hover:bg-muted grid place-items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-
-                  {/* Thanh 3 Phân Hệ Mục Đóng Góp Độc Lập — Ép Phẳng Chống Tràn */}
-                  <div className="flex p-1 bg-muted rounded-xl mx-5 mt-4 border border-border/50 gap-0.5 shrink-0">
-                    {[
-                      { id: "weekly", label: "Tuần này" },
-                      { id: "monthly", label: "Hằng tháng" },
-                      { id: "allTime", label: "Cao nhất" }
-                    ].map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveContributorTab(tab.id as any)}
-                        className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                          activeContribTab === tab.id
-                            ? "bg-card text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
+                      key={tab.id}
+                      onClick={() => setActiveContributorTab(tab.id as any)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${activeContribTab === tab.id
+                        ? "bg-white text-slate-900 shadow-sm border border-slate-100/50"
+                        : "text-slate-500 hover:text-slate-800"
                         }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex-1 overflow-y-auto relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {/* Podium Section */}
+                  <div className="relative pt-6 pb-0 flex items-end justify-center gap-2 px-4 z-10 min-h-[250px]">
+                    {/* Rank 2 */}
+                    {mockContributions[activeContribTab][1] && (() => {
+                      const u = mockContributions[activeContribTab][1];
+                      return (
+                        <div className="flex-1 flex flex-col items-center">
+                          <div className="size-14 rounded-full border-[3px] border-[#3b82f6] bg-white text-[#3b82f6] flex items-center justify-center text-xl font-black shadow-md z-10 mb-2">
+                            {u.avatar}
+                          </div>
+                          <div className="w-full px-0.5 mb-1.5">
+                            <div className="text-[11px] font-bold text-slate-800 text-center leading-tight line-clamp-2">{u.name}</div>
+                          </div>
+                          <div className="flex items-center gap-1 bg-white border border-[#3b82f6] text-[#3b82f6] px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm mb-3 z-10 whitespace-nowrap">
+                            <Gem size={10} className="fill-[#3b82f6]" /> {u.points.toLocaleString()}
+                          </div>
+                          <div className="w-full h-[95px] bg-[#f5b675] rounded-t-2xl flex justify-center pt-3 shadow-[inset_0_4px_6px_rgba(255,255,255,0.4)]">
+                            <span className="text-white/90 font-black text-3xl drop-shadow-sm">#2</span>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* Rank 1 */}
+                    {mockContributions[activeContribTab][0] && (() => {
+                      const u = mockContributions[activeContribTab][0];
+                      return (
+                        <div className="flex-[1.2] flex flex-col items-center">
+                          <div className="size-[68px] rounded-full border-[3px] border-[#22c55e] bg-white text-[#22c55e] flex items-center justify-center text-2xl font-black shadow-md z-10 mb-2 relative">
+                            {u.avatar}
+                          </div>
+                          <div className="w-full px-0.5 mb-1.5">
+                            <div className="text-[12px] font-bold text-slate-800 text-center leading-tight line-clamp-2">{u.name}</div>
+                          </div>
+                          <div className="flex items-center gap-1 bg-white border border-[#22c55e] text-[#22c55e] px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-sm mb-3 z-10 whitespace-nowrap">
+                            <Gem size={10} className="fill-[#22c55e]" /> {u.points.toLocaleString()}
+                          </div>
+                          <div className="w-full h-[140px] bg-[#9bd16f] rounded-t-2xl flex justify-center pt-4 shadow-[inset_0_4px_6px_rgba(255,255,255,0.4)]">
+                            <span className="text-white font-black text-[40px] leading-none drop-shadow-sm">#1</span>
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* Rank 3 */}
+                    {mockContributions[activeContribTab][2] && (() => {
+                      const u = mockContributions[activeContribTab][2];
+                      return (
+                        <div className="flex-1 flex flex-col items-center">
+                          <div className="size-14 rounded-full border-[3px] border-[#ef4444] bg-white text-[#ef4444] flex items-center justify-center text-xl font-black shadow-md z-10 mb-2">
+                            {u.avatar}
+                          </div>
+                          <div className="w-full px-0.5 mb-1.5">
+                            <div className="text-[11px] font-bold text-slate-800 text-center leading-tight line-clamp-2">{u.name}</div>
+                          </div>
+                          <div className="flex items-center gap-1 bg-white border border-[#ef4444] text-[#ef4444] px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm mb-3 z-10 whitespace-nowrap">
+                            <Gem size={10} className="fill-[#ef4444]" /> {u.points.toLocaleString()}
+                          </div>
+                          <div className="w-full h-[80px] bg-[#ec8c8b] rounded-t-2xl flex justify-center pt-2 shadow-[inset_0_4px_6px_rgba(255,255,255,0.4)]">
+                            <span className="text-white/90 font-black text-3xl drop-shadow-sm">#3</span>
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
 
-                  {/* Danh sách các sinh viên vinh danh tương ứng với tab được chọn */}
-                  <div className="p-5 overflow-y-auto flex-1 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                    {mockContributions[activeContribTab].map((u) => (
-                      <motion.div
-                        key={u.rank}
-                        initial={{ opacity: 0, x: -5 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex items-center gap-3.5 p-3 rounded-xl bg-muted/30 border border-border/40 hover:bg-muted/60 transition-colors"
-                      >
-                        {/* Xếp hạng huy chương */}
-                        <div className="size-7 shrink-0 rounded-full grid place-items-center text-xs font-bold">
-                          {u.rank === 1 ? (
-                            <Medal size={20} className="text-amber-500 fill-amber-500/20" />
-                          ) : u.rank === 2 ? (
-                            <Medal size={20} className="text-slate-400 fill-slate-400/20" />
-                          ) : (
-                            <Medal size={20} className="text-amber-700 fill-amber-700/20" />
-                          )}
-                        </div>
-
-                        {/* Avatar viết tắt */}
-                        <div className="size-9 shrink-0 rounded-full bg-ink text-cream grid place-items-center text-xs font-bold shadow-inner">
+                  {/* List Section for #4, #5... */}
+                  <div className="px-5 pb-6 space-y-3 relative z-10">
+                    {mockContributions[activeContribTab].slice(3).map((u) => (
+                      <div key={u.rank} className="flex items-center gap-3.5 bg-white py-2.5 px-4 rounded-[20px] shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-slate-100 transition-transform hover:scale-[1.02]">
+                        <span className="text-sm font-black text-slate-700 w-5">#{u.rank}</span>
+                        <div className="size-10 shrink-0 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center text-sm font-black shadow-sm">
                           {u.avatar}
                         </div>
-
-                        {/* Thông tin chi tiết */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-center gap-2">
-                            <span className="text-sm font-bold text-foreground truncate">{u.name}</span>
-                            <span className="text-xs font-mono font-black text-primary shrink-0">{u.points.toLocaleString()} pts</span>
+                          <div className="text-sm font-bold text-slate-800 truncate">{u.name}</div>
+                          <div className="flex items-center gap-1 text-[#3b82f6] text-[11px] font-bold mt-0.5">
+                            <Gem size={11} className="fill-[#3b82f6]/20" /> {u.points.toLocaleString()}
                           </div>
-                          <p className="text-[11px] text-muted-foreground truncate mt-0.5 font-medium">{u.desc}</p>
                         </div>
-                      </motion.div>
+                        <div className="shrink-0">
+                          {u.trending === "up" ? (
+                            <TrendingUp size={20} className="text-[#22c55e]" strokeWidth={2.5} />
+                          ) : (
+                            <TrendingDown size={20} className="text-[#ef4444]" strokeWidth={2.5} />
+                          )}
+                        </div>
+                      </div>
                     ))}
                   </div>
-
-                  {/* Footer Modal */}
-                  <div className="p-4 border-t border-border flex bg-muted/5">
-                    <p className="text-[10px] text-muted-foreground font-medium my-auto">Cập nhật realtime từ Vector Thư viện</p>
-                    <button
-                      onClick={() => setIsContributorOpen(false)}
-                      className="px-4 py-2 ml-auto rounded-xl bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer shadow-sm"
-                    >
-                      Đóng bảng
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
-            </>
-          )}
-        </AnimatePresence>,
-        document.body
-      ) : null}
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

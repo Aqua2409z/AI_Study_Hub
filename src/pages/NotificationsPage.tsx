@@ -1,3 +1,5 @@
+"use client";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, CheckCheck, Search, Bot, Trophy, ShoppingBag, MessageCircle, Trash2 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
@@ -79,6 +81,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -91,12 +94,13 @@ export default function NotificationsPage() {
         <button
           disabled={unread === 0}
           onClick={handleMarkAllAsRead}
-          className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 transition-opacity"
         >
           <CheckCheck size={16} /> Đọc tất cả
         </button>
       </div>
 
+      {/* Search */}
       <div className="surface-card p-3 relative">
         <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
         <input
@@ -107,12 +111,15 @@ export default function NotificationsPage() {
         />
       </div>
 
-      <div className="space-y-2">
+      {/* List */}
+      <div className="space-y-3">
         <AnimatePresence>
           {isLoading ? (
-            <div className="py-12 text-center text-muted-foreground"><div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />Đang tải...</div>
+            <div className="py-12 text-center text-muted-foreground">
+              <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              Đang tải...
+            </div>
           ) : filtered.map((n) => {
-            // Determine icon based on title/content keywords (fallback logic for UI)
             let kind: "ai" | "system" | "market" | "social" = "system";
             if (n.title.toLowerCase().includes("tài liệu") || n.title.toLowerCase().includes("marketplace")) kind = "market";
             if (n.content.toLowerCase().includes("ai") || n.title.toLowerCase().includes("ai")) kind = "ai";
@@ -120,45 +127,68 @@ export default function NotificationsPage() {
             
             const meta = iconMap[kind];
             const Icon = meta.Icon;
+            
             return (
               <motion.div
                 key={n.id}
                 layout
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 10 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98 }}
                 onClick={() => handleMarkAsRead(n.id)}
-                className={`surface-card p-4 flex gap-3 cursor-pointer group ${!n.isRead ? "border-primary/40 bg-primary/5" : ""}`}
+                className={`surface-card p-5 flex gap-4 cursor-pointer group relative overflow-hidden transition-all duration-200 hover:shadow-sm ${
+                  !n.isRead ? "border-primary/40 bg-primary/5" : ""
+                }`}
               >
+                {/* Khối Icon phân loại bên trái */}
                 <div
-                  className="size-10 shrink-0 rounded-xl grid place-items-center"
+                  className="size-11 shrink-0 rounded-xl grid place-items-center"
                   style={{
                     background: `oklch(0.55 0.14 ${meta.tint} / 0.15)`,
                     color: `oklch(0.45 0.14 ${meta.tint})`,
                   }}
                 >
-                  <Icon size={18} />
+                  <Icon size={20} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold">{n.title}</div>
-                  <div className="text-sm leading-snug mt-0.5 text-foreground/90">{n.content}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleString()}</div>
+
+                {/* Khối chữ và nội dung */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  
+                  {/* Hàng 1: Tiêu đề & Cụm thời gian + Chấm xanh bên phải */}
+                  <div className="flex items-center justify-between gap-4 w-full">
+                    <h3 className="text-sm sm:text-base font-bold text-foreground leading-tight truncate">
+                      {n.title}
+                    </h3>
+                    
+                    <div className="flex items-center gap-2.5 shrink-0 select-none">
+                      <span className="text-xs text-muted-foreground/80 font-medium whitespace-nowrap">
+                        {new Date(n.createdAt).toLocaleString()}
+                      </span>
+                      {!n.isRead && <span className="size-2 rounded-full bg-primary shrink-0 animate-pulse" />}
+                    </div>
+                  </div>
+
+                  {/* Hàng 2: Nội dung (pr-10 để chữ tự xuống dòng né nút xóa ra) */}
+                  <p className="text-sm leading-relaxed text-foreground/80 break-words mt-0.5 pr-10">
+                    {n.content}
+                  </p>
                 </div>
-                <div className="flex flex-col items-end gap-2 shrink-0">
-                  {!n.isRead && <span className="size-2 mt-1 rounded-full bg-primary" />}
-                  <button 
-                    onClick={(e) => handleDelete(n.id, e)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive hover:text-destructive-foreground opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+
+                {/* 🎯 NÚT DELETE: Đã chuyển xuống góc dưới bên phải cố định */}
+                <button 
+                  onClick={(e) => handleDelete(n.id, e)}
+                  className="absolute right-5 bottom-5 p-1.5 rounded-lg text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 z-20"
+                  title="Xóa thông báo"
+                >
+                  <Trash2 size={15} />
+                </button>
               </motion.div>
             );
           })}
         </AnimatePresence>
+        
         {!isLoading && filtered.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">Không có thông báo.</div>
+          <div className="text-center py-16 text-muted-foreground">Không có thông báo nào.</div>
         )}
       </div>
     </div>
